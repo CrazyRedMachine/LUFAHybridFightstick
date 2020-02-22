@@ -2,7 +2,7 @@
 
 I really like the "neogeo pad 2" (basically a neogeo cd pad with 6 face buttons + 2 triggers), and wanted to make one of mine work both on nintendo switch and PC so I modded an Arduino pro micro inside it and made some PoC code.
 
-While [it's working great](https://www.instagram.com/p/B56IP1AIHOc/), it'd definitely need a lot of cleanup ^^;
+While [it's working great](https://www.instagram.com/p/B56IP1AIHOc/), it'd definitely need a lot of code cleanup ^^;
 
 ## Acknowledgments
 

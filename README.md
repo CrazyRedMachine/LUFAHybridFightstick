@@ -17,7 +17,7 @@ Hold "select" as you plug the controller to make it a Nintendo Switch controller
 
 Hold "start" as you plug the controller to make it an XInput controller.
 
-Gamepad mode is persistent across plugging and unplugging the controller, so if you don't press anything while plugging the controller, it will stay in the last used mode. 
+Gamepad mode is persistent, so if you don't press anything while plugging the controller, it will stay in the last used mode. 
 
 ### DPAD modes
 

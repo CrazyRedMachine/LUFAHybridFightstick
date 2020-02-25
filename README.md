@@ -21,11 +21,11 @@ Gamepad mode is persistent, so if you don't press anything while plugging the co
 
 ### DPAD modes
 
-You can switch seamlessly between the 3 stick modes by pressing START+SELECT. 
+You can switch seamlessly between the 3 stick modes by pressing START+SELECT+[direction]. 
 
-- DPAD
-- Fake Left Analog (DPad is mapped to L-Analog)
-- Fake Right Analog (DPad is mapped to R-Analog)
+- START+SELECT+UP : DPAD
+- START+SELECT+LEFT : Fake Left Analog (DPad is mapped to L-Analog)
+- START+SELECT+RIGHT : Fake Right Analog (DPad is mapped to R-Analog)
 
 DPAD mode is also persistent.
 

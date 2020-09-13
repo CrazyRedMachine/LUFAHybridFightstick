@@ -29,15 +29,40 @@ State_t state;
 
 /* mode selectors */
 bool xinput;
+bool modeChanged;
+
+void checkModeChange(){
+    if (buttonStatus[BUTTONSTART] && buttonStatus[BUTTONSELECT])
+    {
+      if ( !modeChanged )
+      {
+        bool need_update = true;
+        if (internalButtonStatus[BUTTONLEFT])
+          state = ANALOG_MODE;
+        else if (internalButtonStatus[BUTTONRIGHT])
+          state = RIGHT_ANALOG_MODE;
+        else if (internalButtonStatus[BUTTONUP])
+          state = DIGITAL;
+        else need_update = false;
+        
+        if (need_update) EEPROM.put(0, state);
+        modeChanged = true;
+      }
+    }
+    else 
+    {
+      modeChanged = false;
+    }
+}
 
 void setupPins(){
   /** Set DATA_CLOCK normally HIGH **/
   pinMode (DATA_CLOCK, OUTPUT);
   digitalWrite (DATA_CLOCK, HIGH);
   
-  /** Set DATA_LATCH normally HIGH **/
+  /** Set DATA_LATCH normally LOW **/
   pinMode (DATA_LATCH, OUTPUT);
-  digitalWrite (DATA_LATCH, HIGH);
+  digitalWrite (DATA_LATCH, LOW);
 
   /** Set DATA_SERIAL normally HIGH **/
   pinMode (DATA_SERIAL, OUTPUT);
@@ -47,9 +72,9 @@ void setupPins(){
 
 void RXTXControllerData () {
   /** Latch for 12us **/
-  digitalWrite(DATA_LATCH, LOW);
-  delayMicroseconds(12);
   digitalWrite(DATA_LATCH, HIGH);
+  delayMicroseconds(12);
+  digitalWrite(DATA_LATCH, LOW);
   delayMicroseconds(6);
 
   /** Read data bit by bit from SR **/
@@ -69,14 +94,14 @@ void setup() {
   delay(3000);
   RXTXControllerData();
 // if select is held on boot, NSWitch mode
-  if (buttons[6])
+  if (buttons[2])
   {
     xinput = false;
     EEPROM.put(2, xinput);
   }
 // if start is held on boot, XInput mode
   else {
-    if (buttons[7])
+    if (buttons[3])
       {
         xinput = true;
         EEPROM.put(2, xinput);
@@ -91,6 +116,7 @@ void setup() {
 void loop() {
     currTime = millis();
     buttonRead();  
+    checkModeChange();
     convert_dpad();
     send_pad_state();
 }
@@ -156,26 +182,18 @@ void buttonRead()
 {  
 RXTXControllerData();
 
-buttonStatus[BUTTONRB] = buttons[0];
-buttonStatus[BUTTONA] = buttons[1];
-buttonStatus[BUTTONB] = buttons[2];
-buttonStatus[BUTTONY] = buttons[3];
-buttonStatus[BUTTONX] = buttons[4];
-buttonStatus[BUTTONLB] = buttons[5];
-buttonStatus[BUTTONSELECT] = buttons[6];
-buttonStatus[BUTTONSTART] = buttons[7];
-internalButtonStatus[BUTTONUP] = buttons[8];
-internalButtonStatus[BUTTONRIGHT] = buttons[9];
-internalButtonStatus[BUTTONDOWN] = buttons[10];
-internalButtonStatus[BUTTONLEFT] = buttons[11];
-byte modeDPAD = buttons[12];
-byte modeAR = buttons[14];
-
-if (modeDPAD)
-  state = DIGITAL;
-else
- if (modeAR) state = RIGHT_ANALOG_MODE;
-  else state = ANALOG_MODE;
+buttonStatus[BUTTONB] = buttons[0];
+buttonStatus[BUTTONY] = buttons[1];
+buttonStatus[BUTTONSELECT] = buttons[2];
+buttonStatus[BUTTONSTART] = buttons[3];
+internalButtonStatus[BUTTONUP] = buttons[4];
+internalButtonStatus[BUTTONDOWN] = buttons[5];
+internalButtonStatus[BUTTONLEFT] = buttons[6];
+internalButtonStatus[BUTTONRIGHT] = buttons[7];
+buttonStatus[BUTTONA] = buttons[8];
+buttonStatus[BUTTONX] = buttons[9];
+buttonStatus[BUTTONLB] = buttons[10];
+buttonStatus[BUTTONRB] = buttons[11];
 
 #define HOME_HOTKEY
 #ifdef HOME_HOTKEY  

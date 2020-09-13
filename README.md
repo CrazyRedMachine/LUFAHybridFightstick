@@ -1,6 +1,6 @@
-## LUFA Switch/XInput hybrid Fightstick (PC-FX Edition)
+## LUFA Switch/XInput hybrid Fightstick (SNES Edition)
 
-This code can be used to make a PC-FX Gamepad work on Nintendo Switch and XBox360 (or PC in XInput mode).
+This code can be used to make a SNES Gamepad work on Nintendo Switch and XBox360 (or PC in XInput mode).
 
 I've put an arduino pro micro directly inside the controller, but you could also go non-destructive and use this code to make an external usb adapter.
 
@@ -8,7 +8,9 @@ I've put an arduino pro micro directly inside the controller, but you could also
 
 This work is based on [fluffymadness' ATMega32U4-Switch-Fightstick](https://github.com/fluffymadness/ATMega32U4-Switch-Fightstick)
  and [bootsector's XInputPadMicro](https://github.com/bootsector/XInputPadMicro), with a couple QoL improvements I needed.
- 
+
+The SNES pad read code is based on [Anthony Burkholder's USBSNES controller](https://github.com/burks10/Arduino-SNES-Controller).
+
 ## Features
 
 ### Gamepad modes
@@ -21,16 +23,17 @@ Gamepad mode is persistent across plugging and unplugging the controller, so if 
 
 ### DPAD modes
 
-You can use the latching switches on the PC-FX pad to switch between DPAD modes.
+You can switch seamlessly between the 3 stick modes by pressing START+SELECT.
 
-MODE 1 switch selects between Analog (A) or DPAD (B).
+- DPAD
+- Fake Left Analog (DPad is mapped to L-Analog)
+- Fake Right Analog (DPad is mapped to R-Analog)
 
-MODE 2 switch selects between LEFT Analog (A) or RIGHT Analog (B). 
-It is ignored when in DPAD mode. 
+DPAD mode is also persistent.
 
 ### Simulated home button
 
-Because the PC-FX pad doesn't have a home button, I also added some code so that holding start+select during more than 1 second presses the home button. You can customize the delay with #define HOME_DELAY 1000 in the .ino file.
+Because the SNES pad doesn't have a home button, I also added some code so that holding start+select during more than 1 second presses the home button. You can customize the delay with #define HOME_DELAY 1000 in the .ino file.
 
 ## Building Instructions
 
@@ -42,18 +45,15 @@ Because the PC-FX pad doesn't have a home button, I also added some code so that
 ## Pinout
 
 When looking at the plug of the *controller cable* :
-```___________
-\ 1 2 3 4 /
- \ 5 6 7 /
-  -------
-
-  V D x L
-   x C G
-  
+```
+ 1 2 3 4 | 5 6 7 >
+ 
+ V C L D | x x G >
+ 
  1: 5V                    -> to arduino 5V
- 2: data (normally high)  -> to arduino digital pin 4
- 4: latch (normally high) -> to arduino digital pin 3
- 6: clock (normally high) -> to arduino digital pin 6
+ 2: clock (normally high) -> to arduino digital pin 6
+ 3: latch (normally LOW)  -> to arduino digital pin 3
+ 4: data  (normally high) -> to arduino digital pin 4
  7: GND                   -> to arduino GND
 
  ```

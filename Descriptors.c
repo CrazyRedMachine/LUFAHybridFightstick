@@ -307,120 +307,34 @@ const uint8_t PROGMEM ConfigurationDescriptorX[] =
   0x00, 0x01, 0x01, 0x03
 };
 
-/** Language descriptor structure. This descriptor, located in FLASH memory, is returned when the host requests
- *  the string descriptor with index 0 (the first index). It is actually an array of 16-bit integers, which indicate
- *  via the language ID table available at USB.org what languages the device supports for its string descriptors.
- */
-const USB_Descriptor_String_t PROGMEM LanguageStringX =
-{
-  .Header                 = {.Size = USB_STRING_LEN(1), .Type = DTYPE_String},
-
-  .UnicodeString          = {LANGUAGE_ID_ENG}
-};
-
-/** Manufacturer descriptor string. This is a Unicode string containing the manufacturer's details in human readable
- *  form, and is read out upon request by the host when the appropriate string ID is requested, listed in the Device
- *  Descriptor.
- */
-const USB_Descriptor_String_t PROGMEM ManufacturerStringX =
-{
-  .Header                 = {.Size = USB_STRING_LEN(12), .Type = DTYPE_String},
-
-  .UnicodeString          = L"kadevice.net"
-};
-
-/** Product descriptor string. This is a Unicode string containing the product's details in human readable form,
- *  and is read out upon request by the host when the appropriate string ID is requested, listed in the Device
- *  Descriptor.
- */
-const USB_Descriptor_String_t PROGMEM ProductStringX =
-{
-  .Header                 = {.Size = USB_STRING_LEN(31), .Type = DTYPE_String},
-
-  .UnicodeString          = L"KADE - Kick Ass Dynamic Encoder"
-};
-
-const USB_Descriptor_String_t PROGMEM VersionStringX =
-{
-  .Header                 = {.Size = USB_STRING_LEN(3), .Type = DTYPE_String},
-
-  .UnicodeString          = L"1.0"
-};
-
-// Language Descriptor Structure
 const USB_Descriptor_String_t PROGMEM LanguageString = USB_STRING_DESCRIPTOR_ARRAY(LANGUAGE_ID_ENG);
+const USB_Descriptor_String_t PROGMEM VersionString = USB_STRING_DESCRIPTOR(L"1.0");
 
-// Manufacturer and Product Descriptor Strings
 const USB_Descriptor_String_t PROGMEM ManufacturerString = USB_STRING_DESCRIPTOR(L"HORI CO.,LTD.");
-const USB_Descriptor_String_t PROGMEM ProductString      = USB_STRING_DESCRIPTOR(L"POKKEN CONTROLLER");
+const USB_Descriptor_String_t PROGMEM ProductString = USB_STRING_DESCRIPTOR(L"POKKEN CONTROLLER");
+const USB_Descriptor_String_t PROGMEM ManufacturerStringX = USB_STRING_DESCRIPTOR(L"kadevice.net");
+const USB_Descriptor_String_t PROGMEM ProductStringX = USB_STRING_DESCRIPTOR(L"KADE - Kick Ass Dynamic Encoder");
 
 // USB Device Callback - Get Descriptor
 uint16_t CALLBACK_USB_GetDescriptor(const uint16_t wValue,
                                     const uint16_t wIndex,
                                     const void** const DescriptorAddress)
 {
- if (xinput) {
-
 const uint8_t  DescriptorType   = (wValue >> 8);
-  const uint8_t  DescriptorNumber = (wValue & 0xFF);
+const uint8_t  DescriptorNumber = (wValue & 0xFF);
 
-  const void* Address = NULL;
-  uint16_t    Size    = NO_DESCRIPTOR;
-
-  switch (DescriptorType)
-  {
-    case DTYPE_Device:
-      Address = &DeviceDescriptorX;
-      Size    = sizeof(DeviceDescriptorX);
-      break;
-    case DTYPE_Configuration:
-      Address = &ConfigurationDescriptorX;
-      Size    = sizeof(ConfigurationDescriptorX);
-      break;
-    case DTYPE_String:
-      switch (DescriptorNumber)
-      {
-        case 0x00:
-          Address = &LanguageString;
-          Size    = pgm_read_byte(&LanguageStringX.Header.Size);
-          break;
-        case 0x01:
-          Address = &ManufacturerString;
-          Size    = pgm_read_byte(&ManufacturerStringX.Header.Size);
-          break;
-        case 0x02:
-          Address = &ProductString;
-          Size    = pgm_read_byte(&ProductStringX.Header.Size);
-          break;
-        case 0x03:
-          Address = &VersionStringX;
-          Size    = pgm_read_byte(&VersionStringX.Header.Size);
-          break;
-    }
-
-      break;
-  }
-
-  *DescriptorAddress = Address;
-  return Size;
-  
- }
- else { 
-  const uint8_t  DescriptorType   = (wValue >> 8);
-  const uint8_t  DescriptorNumber = (wValue & 0xFF);
-
-  const void* Address = NULL;
-  uint16_t    Size    = NO_DESCRIPTOR;
+const void* Address = NULL;
+uint16_t    Size    = NO_DESCRIPTOR;
 
   switch (DescriptorType)
   {
-    case DTYPE_Device:
-      Address = &DeviceDescriptor;
-      Size    = sizeof(USB_Descriptor_Device_t);
+     case DTYPE_Device:
+      Address = xinput? &DeviceDescriptorX:&DeviceDescriptor;
+      Size    = xinput? sizeof(DeviceDescriptorX):sizeof(USB_Descriptor_Device_t);
       break;
     case DTYPE_Configuration:
-      Address = &ConfigurationDescriptor;
-      Size    = sizeof(USB_Descriptor_Configuration_t);
+      Address = xinput? &ConfigurationDescriptorX:&ConfigurationDescriptor;
+      Size    = xinput? sizeof(ConfigurationDescriptorX):sizeof(USB_Descriptor_Configuration_t);
       break;
     case DTYPE_String:
       switch (DescriptorNumber)
@@ -430,15 +344,18 @@ const uint8_t  DescriptorType   = (wValue >> 8);
           Size    = pgm_read_byte(&LanguageString.Header.Size);
           break;
         case STRING_ID_Manufacturer:
-          Address = &ManufacturerString;
-          Size    = pgm_read_byte(&ManufacturerString.Header.Size);
+          Address = xinput? &ManufacturerStringX:&ManufacturerString;
+          Size    = xinput? pgm_read_byte(&ManufacturerStringX.Header.Size):pgm_read_byte(&ManufacturerString.Header.Size);
           break;
         case STRING_ID_Product:
-          Address = &ProductString;
-          Size    = pgm_read_byte(&ProductString.Header.Size);
+          Address = xinput? &ProductStringX:&ProductString;
+          Size    = xinput ? pgm_read_byte(&ProductStringX.Header.Size):pgm_read_byte(&ProductString.Header.Size);
           break;
-      }
-
+        case STRING_ID_Version:
+          Address = &VersionString;
+          Size    = pgm_read_byte(&VersionString.Header.Size);
+          break;
+    }
       break;
     case DTYPE_HID:
       Address = &ConfigurationDescriptor.HID_JoystickHID;
@@ -452,7 +369,6 @@ const uint8_t  DescriptorType   = (wValue >> 8);
 
   *DescriptorAddress = Address;
   return Size;
- }
  
 }
 

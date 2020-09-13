@@ -1,61 +1,21 @@
 #include "LUFAConfig.h"
 #include <LUFA.h>
-#include "Joystick.h"
+#include "XS_HID.h"
 #define BOUNCE_WITH_PROMPT_DETECTION
 #include <Bounce2.h>
 #include <EEPROM.h>
 #include <inttypes.h>
 
-/* BIT MANIPULATION MACRO */
-#define bit_set(p,m) ((p) |= (m))
-#define bit_clear(p,m) ((p) &= ~(m))
-#define bit_write(c,p,m) (c ? bit_set(p,m) : bit_clear(p,m))
-#define bit_check(value, bit) (((value) >> (bit)) & 0x01)
+//delay in ms for start+select to become HOME
+#define HOME_DELAY 1000
 
 /* Buttons declarations */
 #define MILLIDEBOUNCE 1 //Debounce time in milliseconds
 unsigned long startAndSelTime = 0;
 unsigned long currTime = 0;
-//delay in ms for start+select to become HOME
-#define HOME_DELAY 1000
-byte buttonStatus[15];
 
-#define DPAD_UP_MASK_ON 0x00
-#define DPAD_UPRIGHT_MASK_ON 0x01
-#define DPAD_RIGHT_MASK_ON 0x02
-#define DPAD_DOWNRIGHT_MASK_ON 0x03
-#define DPAD_DOWN_MASK_ON 0x04
-#define DPAD_DOWNLEFT_MASK_ON 0x05
-#define DPAD_LEFT_MASK_ON 0x06
-#define DPAD_UPLEFT_MASK_ON 0x07
-#define DPAD_NOTHING_MASK_ON 0x08
-#define A_MASK_ON 0x04
-#define B_MASK_ON 0x02
-#define X_MASK_ON 0x08
-#define Y_MASK_ON 0x01
-#define LB_MASK_ON 0x10
-#define RB_MASK_ON 0x20
-#define ZL_MASK_ON 0x40
-#define ZR_MASK_ON 0x80
-#define START_MASK_ON 0x200
-#define SELECT_MASK_ON 0x100
-#define HOME_MASK_ON 0x1000
+byte internalButtonStatus[4];
 
-#define BUTTONUP 0
-#define BUTTONDOWN 1
-#define BUTTONLEFT 2
-#define BUTTONRIGHT 3
-#define BUTTONA 4
-#define BUTTONB 5
-#define BUTTONX 6
-#define BUTTONY 7
-#define BUTTONLB 8
-#define BUTTONRB 9
-#define BUTTONLT 10
-#define BUTTONRT 11
-#define BUTTONSTART 12
-#define BUTTONSELECT 13
-#define BUTTONHOME 14
 
 Bounce joystickUP = Bounce();
 Bounce joystickDOWN = Bounce();
@@ -74,7 +34,6 @@ Bounce buttonSELECT = Bounce();
 Bounce buttonHOME = Bounce();
 
 /* MODE DECLARATIONS */
-
 typedef enum {
   RIGHT_ANALOG_MODE,
   ANALOG_MODE,
@@ -91,14 +50,16 @@ void checkModeChange(){
     {
       if ( !modeChanged )
       {
-        if (buttonStatus[BUTTONLEFT])
+        bool need_update = true;
+        if (internalButtonStatus[BUTTONLEFT])
           state = ANALOG_MODE;
-        else if (buttonStatus[BUTTONRIGHT])
+        else if (internalButtonStatus[BUTTONRIGHT])
           state = RIGHT_ANALOG_MODE;
-        else if (buttonStatus[BUTTONUP])
+        else if (internalButtonStatus[BUTTONUP])
           state = DIGITAL;
+        else need_update = false;
         
-        EEPROM.put(0, state);
+        if (need_update) EEPROM.put(0, state);
         modeChanged = true;
       }
     }
@@ -142,6 +103,7 @@ void setupPins(){
     buttonHOME.interval(MILLIDEBOUNCE);
 }
 void setup() {
+
   modeChanged = false;
   EEPROM.get(0, state);
   EEPROM.get(2, xinput);
@@ -164,138 +126,82 @@ void setup() {
       }
   }
   
-  if (xinput){
-    xbox_init(true);
-  } else {
   SetupHardware();
   GlobalInterruptEnable();
-  }
 }
 
 
 void loop() {
     currTime = millis();
     buttonRead();
-    checkModeChange();
-  if (xinput){
-    loopX();
-  } else {
-    processButtons();
-    HID_Task();
-    USB_USBTask();
-  }
+    checkModeChange();    
+    convert_dpad();
+    generate_report();
+    send_pad_state();
 }
 
-uint8_t pad_up, pad_down, pad_left, pad_right, pad_y, pad_b, pad_x, pad_a, pad_black,
-  pad_white, pad_start, pad_select, pad_l3, pad_r3, pad_l, pad_r, pad_left_analog_x,
-  pad_left_analog_y, pad_right_analog_x, pad_right_analog_y;
+void convert_dpad(){
   
-void loopX(){
-  xbox_reset_watchdog();
-
-    pad_y = buttonStatus[BUTTONY];
-    pad_b = buttonStatus[BUTTONB];
-    pad_x = buttonStatus[BUTTONX];
-    pad_a = buttonStatus[BUTTONA];
-    pad_black =  buttonStatus[BUTTONLB];
-    pad_white =  buttonStatus[BUTTONRB];
-    pad_start =  buttonStatus[BUTTONSTART];
-    pad_select =  buttonStatus[BUTTONSELECT];
-    pad_l3 =  0;
-    pad_r3 =  0;
-    pad_l = buttonStatus[BUTTONLT];
-    pad_r = buttonStatus[BUTTONRT];
-
-    pad_up = pad_down = pad_left = pad_right = 0;
-    pad_left_analog_x = pad_left_analog_y = pad_right_analog_x = pad_right_analog_y = 0x7F;
-
- switch (state)
+  switch (state)
   {
     case DIGITAL:
-      pad_up = buttonStatus[BUTTONUP];
-      pad_down = buttonStatus[BUTTONDOWN];
-      pad_left = buttonStatus[BUTTONLEFT];
-      pad_right = buttonStatus[BUTTONRIGHT];
+    buttonStatus[AXISLX] = 128;
+    buttonStatus[AXISLY] = 128;
+    buttonStatus[AXISRX] = 128;
+    buttonStatus[AXISRY] = 128;
+    buttonStatus[BUTTONUP] = internalButtonStatus[BUTTONUP];
+    buttonStatus[BUTTONDOWN] = internalButtonStatus[BUTTONDOWN];
+    buttonStatus[BUTTONLEFT] = internalButtonStatus[BUTTONLEFT];
+    buttonStatus[BUTTONRIGHT] = internalButtonStatus[BUTTONRIGHT];
     break;
 
     case ANALOG_MODE:   
-       if(buttonStatus[BUTTONLEFT]) {
-      pad_left_analog_x = 0x00;
-    } else if(buttonStatus[BUTTONRIGHT]) {
-      pad_left_analog_x = 0xFF;
-    }
+    buttonStatus[AXISRX] = 128;
+    buttonStatus[AXISRY] = 128;
+    buttonStatus[BUTTONUP] = 0;
+    buttonStatus[BUTTONDOWN] = 0;
+    buttonStatus[BUTTONLEFT] = 0;
+    buttonStatus[BUTTONRIGHT] = 0;
+    if ((internalButtonStatus[BUTTONUP]) && (internalButtonStatus[BUTTONRIGHT])){buttonStatus[AXISLY] = 0;buttonStatus[AXISLX] = 255;}
+    else if ((internalButtonStatus[BUTTONDOWN]) && (internalButtonStatus[BUTTONRIGHT])) {buttonStatus[AXISLY] = 255;buttonStatus[AXISLX] = 255;}
+    else if ((internalButtonStatus[BUTTONDOWN]) && (internalButtonStatus[BUTTONLEFT])) {buttonStatus[AXISLY] = 255;buttonStatus[AXISLX] = 0;}
+    else if ((internalButtonStatus[BUTTONUP]) && (internalButtonStatus[BUTTONLEFT])){buttonStatus[AXISLY] = 0;buttonStatus[AXISLX] = 0;}
+    else if (internalButtonStatus[BUTTONUP]) {buttonStatus[AXISLY] = 0;buttonStatus[AXISLX] = 128;}
+    else if (internalButtonStatus[BUTTONDOWN]) {buttonStatus[AXISLY] = 255;buttonStatus[AXISLX] = 128;}
+    else if (internalButtonStatus[BUTTONLEFT]) {buttonStatus[AXISLX] = 0;buttonStatus[AXISLY] = 128;}
+    else if (internalButtonStatus[BUTTONRIGHT]) {buttonStatus[AXISLX] = 255;buttonStatus[AXISLY] = 128;}
+    else {buttonStatus[AXISLX] = 128;buttonStatus[AXISLY] = 128;}
 
-    if(buttonStatus[BUTTONUP]) {
-      pad_left_analog_y = 0x00;
-    } else if(buttonStatus[BUTTONDOWN]) {
-      pad_left_analog_y = 0xFF;
-    }
     break;
     
     case RIGHT_ANALOG_MODE:   
-       if(buttonStatus[BUTTONLEFT]) {
-      pad_right_analog_x = 0x00;
-    } else if(buttonStatus[BUTTONRIGHT]) {
-      pad_right_analog_x = 0xFF;
-    }
+    buttonStatus[AXISLX] = 128;
+    buttonStatus[AXISLY] = 128;
+    buttonStatus[BUTTONUP] = 0;
+    buttonStatus[BUTTONDOWN] = 0;
+    buttonStatus[BUTTONLEFT] = 0;
+    buttonStatus[BUTTONRIGHT] = 0;
+    
+    if ((internalButtonStatus[BUTTONUP]) && (internalButtonStatus[BUTTONRIGHT])){buttonStatus[AXISRY] = 0;buttonStatus[AXISRX] = 255;}
+    else if ((internalButtonStatus[BUTTONUP]) && (internalButtonStatus[BUTTONLEFT])){buttonStatus[AXISRY] = 0;buttonStatus[AXISRX] = 0;}
+    else if ((internalButtonStatus[BUTTONDOWN]) && (internalButtonStatus[BUTTONRIGHT])) {buttonStatus[AXISRY] = 255;buttonStatus[AXISRX] = 255;}
+    else if ((internalButtonStatus[BUTTONDOWN]) && (internalButtonStatus[BUTTONLEFT])) {buttonStatus[AXISRY] = 255;buttonStatus[AXISRX] = 0;}
+    else if (internalButtonStatus[BUTTONUP]) {buttonStatus[AXISRY] = 0;buttonStatus[AXISRX] = 128;}
+    else if (internalButtonStatus[BUTTONDOWN]) {buttonStatus[AXISRY] = 255;buttonStatus[AXISRX] = 128;}
+    else if (internalButtonStatus[BUTTONLEFT]) {buttonStatus[AXISRX] = 0;buttonStatus[AXISRY] = 128;}
+    else if (internalButtonStatus[BUTTONRIGHT]) {buttonStatus[AXISRX] = 255;buttonStatus[AXISRY] = 128;}
+    else {buttonStatus[AXISRX] = 128;buttonStatus[AXISRY] = 128;}
 
-    if(buttonStatus[BUTTONUP]) {
-      pad_right_analog_y = 0x00;
-    } else if(buttonStatus[BUTTONDOWN]) {
-      pad_right_analog_y = 0xFF;
-    }
     break;
   }
-
-    pad_up    ? bit_set(gamepad_state.digital_buttons_1, XBOX_DPAD_UP)    : bit_clear(gamepad_state.digital_buttons_1, XBOX_DPAD_UP);
-    pad_down  ? bit_set(gamepad_state.digital_buttons_1, XBOX_DPAD_DOWN)  : bit_clear(gamepad_state.digital_buttons_1, XBOX_DPAD_DOWN);
-    pad_left  ? bit_set(gamepad_state.digital_buttons_1, XBOX_DPAD_LEFT)  : bit_clear(gamepad_state.digital_buttons_1, XBOX_DPAD_LEFT);
-    pad_right ? bit_set(gamepad_state.digital_buttons_1, XBOX_DPAD_RIGHT) : bit_clear(gamepad_state.digital_buttons_1, XBOX_DPAD_RIGHT);
-
-    pad_start  ? bit_set(gamepad_state.digital_buttons_1, XBOX_START)       : bit_clear(gamepad_state.digital_buttons_1, XBOX_START);
-    pad_select ? bit_set(gamepad_state.digital_buttons_1, XBOX_BACK)        : bit_clear(gamepad_state.digital_buttons_1, XBOX_BACK);
-    pad_l3     ? bit_set(gamepad_state.digital_buttons_1, XBOX_LEFT_STICK)  : bit_clear(gamepad_state.digital_buttons_1, XBOX_LEFT_STICK);
-    pad_r3     ? bit_set(gamepad_state.digital_buttons_1, XBOX_RIGHT_STICK) : bit_clear(gamepad_state.digital_buttons_1, XBOX_RIGHT_STICK);
-
-    pad_a ? bit_set(gamepad_state.digital_buttons_2, XBOX_A)    : bit_clear(gamepad_state.digital_buttons_2, XBOX_A);
-    pad_b ? bit_set(gamepad_state.digital_buttons_2, XBOX_B)  : bit_clear(gamepad_state.digital_buttons_2, XBOX_B);
-    pad_x ? bit_set(gamepad_state.digital_buttons_2, XBOX_X)  : bit_clear(gamepad_state.digital_buttons_2, XBOX_X);
-    pad_y ? bit_set(gamepad_state.digital_buttons_2, XBOX_Y) : bit_clear(gamepad_state.digital_buttons_2, XBOX_Y);
-
-    pad_black ? bit_set(gamepad_state.digital_buttons_2, XBOX_LB)    : bit_clear(gamepad_state.digital_buttons_2, XBOX_LB);
-    pad_white ? bit_set(gamepad_state.digital_buttons_2, XBOX_RB)    : bit_clear(gamepad_state.digital_buttons_2, XBOX_RB);
-
-    if(pad_start && pad_select) {
-      if (startAndSelTime == 0)
-       startAndSelTime = millis();
-      else if (currTime - startAndSelTime > HOME_DELAY)
-      {
-        bit_set(gamepad_state.digital_buttons_2, XBOX_HOME);
-        bit_clear(gamepad_state.digital_buttons_1, XBOX_START);
-        bit_clear(gamepad_state.digital_buttons_1, XBOX_BACK);
-      }
-    } else {
-      startAndSelTime = 0;
-      bit_clear(gamepad_state.digital_buttons_2, XBOX_HOME);
-    }
-
-    gamepad_state.l_x = pad_left_analog_x * 257 + -32768;
-    gamepad_state.l_y = pad_left_analog_y * -257 + 32767;
-    gamepad_state.r_x = pad_right_analog_x * 257 + -32768;
-    gamepad_state.r_y = pad_right_analog_y * -257 + 32767;
-
-    gamepad_state.lt = pad_l * 0xFF;
-    gamepad_state.rt = pad_r * 0xFF;
-
-    xbox_send_pad_state();
 }
 
 void buttonRead()
-{
-  if (joystickUP.update()) {buttonStatus[BUTTONUP] = joystickUP.fell();}
-  if (joystickDOWN.update()) {buttonStatus[BUTTONDOWN] = joystickDOWN.fell();}
-  if (joystickLEFT.update()) {buttonStatus[BUTTONLEFT] = joystickLEFT.fell();}
-  if (joystickRIGHT.update()) {buttonStatus[BUTTONRIGHT] = joystickRIGHT.fell();}
+{  
+  if (joystickUP.update()) {internalButtonStatus[BUTTONUP] = joystickUP.fell();}
+  if (joystickDOWN.update()) {internalButtonStatus[BUTTONDOWN] = joystickDOWN.fell();}
+  if (joystickLEFT.update()) {internalButtonStatus[BUTTONLEFT] = joystickLEFT.fell();}
+  if (joystickRIGHT.update()) {internalButtonStatus[BUTTONRIGHT] = joystickRIGHT.fell();}
   if (buttonA.update()) {buttonStatus[BUTTONA] = buttonA.fell();}
   if (buttonB.update()) {buttonStatus[BUTTONB] = buttonB.fell();}
   if (buttonX.update()) {buttonStatus[BUTTONX] = buttonX.fell();}
@@ -306,116 +212,21 @@ void buttonRead()
   if (buttonRT.update()) {buttonStatus[BUTTONRT] = buttonRT.fell();}
   if (buttonSTART.update()) {buttonStatus[BUTTONSTART] = buttonSTART.fell();}
   if (buttonSELECT.update()) {buttonStatus[BUTTONSELECT] = buttonSELECT.fell();}
-  if (buttonHOME.update()) {buttonStatus[BUTTONHOME] = buttonHOME.fell();}
-}
+  if (buttonHOME.update()) { buttonStatus[BUTTONHOME] = buttonHOME.fell();}
 
-
-void processDPAD(){
-    ReportData.LX = 128;
-    ReportData.LY = 128;
-    ReportData.RX = 128;
-    ReportData.RY = 128;
- 
-    if ((buttonStatus[BUTTONUP]) && (buttonStatus[BUTTONRIGHT])){ReportData.HAT = DPAD_UPRIGHT_MASK_ON;}
-    else if ((buttonStatus[BUTTONDOWN]) && (buttonStatus[BUTTONRIGHT])) {ReportData.HAT = DPAD_DOWNRIGHT_MASK_ON;} 
-    else if ((buttonStatus[BUTTONDOWN]) && (buttonStatus[BUTTONLEFT])) {ReportData.HAT = DPAD_DOWNLEFT_MASK_ON;}
-    else if ((buttonStatus[BUTTONUP]) && (buttonStatus[BUTTONLEFT])){ReportData.HAT = DPAD_UPLEFT_MASK_ON;}
-    else if (buttonStatus[BUTTONUP]) {ReportData.HAT = DPAD_UP_MASK_ON;}
-    else if (buttonStatus[BUTTONDOWN]) {ReportData.HAT = DPAD_DOWN_MASK_ON;}
-    else if (buttonStatus[BUTTONLEFT]) {ReportData.HAT = DPAD_LEFT_MASK_ON;}
-    else if (buttonStatus[BUTTONRIGHT]) {ReportData.HAT = DPAD_RIGHT_MASK_ON;}
-    else{ReportData.HAT = DPAD_NOTHING_MASK_ON;}
-}
-void processLANALOG(){
-    ReportData.HAT = DPAD_NOTHING_MASK_ON;
-    ReportData.RX = 128;
-    ReportData.RY = 128;
-
-    if ((buttonStatus[BUTTONUP]) && (buttonStatus[BUTTONRIGHT])){ReportData.LY = 0;ReportData.LX = 255;}
-    else if ((buttonStatus[BUTTONDOWN]) && (buttonStatus[BUTTONRIGHT])) {ReportData.LY = 255;ReportData.LX = 255;}
-    else if ((buttonStatus[BUTTONDOWN]) && (buttonStatus[BUTTONLEFT])) {ReportData.LY = 255;ReportData.LX = 0;}
-    else if ((buttonStatus[BUTTONUP]) && (buttonStatus[BUTTONLEFT])){ReportData.LY = 0;ReportData.LX = 0;}
-    else if (buttonStatus[BUTTONUP]) {ReportData.LY = 0;ReportData.LX = 128;}
-    else if (buttonStatus[BUTTONDOWN]) {ReportData.LY = 255;ReportData.LX = 128;}
-    else if (buttonStatus[BUTTONLEFT]) {ReportData.LX = 0;ReportData.LY = 128;}
-    else if (buttonStatus[BUTTONRIGHT]) {ReportData.LX = 255;ReportData.LY = 128;}
-    else {ReportData.LX = 128;ReportData.LY = 128;}
-}
-void processLANALOGSmash(){
-    ReportData.HAT = DPAD_NOTHING_MASK_ON;
-    ReportData.RX = 128;
-    ReportData.RY = 128;
-    
-    if ((buttonStatus[BUTTONUP]) && (buttonStatus[BUTTONRIGHT])){ReportData.LY = 64;ReportData.LX = 192;}
-    else if ((buttonStatus[BUTTONDOWN]) && (buttonStatus[BUTTONRIGHT])) {ReportData.LY = 192;ReportData.LX = 192;}
-    else if ((buttonStatus[BUTTONDOWN]) && (buttonStatus[BUTTONLEFT])) {ReportData.LY = 192;ReportData.LX = 64;}  
-    else if ((buttonStatus[BUTTONUP]) && (buttonStatus[BUTTONLEFT])){ReportData.LY = 64;ReportData.LX = 64;}
-    else if (buttonStatus[BUTTONUP]) {ReportData.LY = 64;ReportData.LX = 128;}
-    else if (buttonStatus[BUTTONDOWN]) {ReportData.LY = 192;ReportData.LX = 128;}
-    else if (buttonStatus[BUTTONLEFT]) {ReportData.LX = 64;ReportData.LY = 128;}
-    else if (buttonStatus[BUTTONRIGHT]) {ReportData.LX = 192;ReportData.LY = 128;}
-    else{ReportData.LX = 128;ReportData.LY = 128;}
-}
-void processRANALOG(){
-    ReportData.HAT = 0x08;
-    ReportData.LX = 128;
-    ReportData.LY = 128;
-    
-    if ((buttonStatus[BUTTONUP]) && (buttonStatus[BUTTONRIGHT])){ReportData.RY = 0;ReportData.RX = 255;}
-    else if ((buttonStatus[BUTTONUP]) && (buttonStatus[BUTTONLEFT])){ReportData.RY = 0;ReportData.RX = 0;}
-    else if ((buttonStatus[BUTTONDOWN]) && (buttonStatus[BUTTONRIGHT])) {ReportData.RY = 255;ReportData.RX = 255;}
-    else if ((buttonStatus[BUTTONDOWN]) && (buttonStatus[BUTTONLEFT])) {ReportData.RY = 255;ReportData.RX = 0;}
-    else if (buttonStatus[BUTTONUP]) {ReportData.RY = 0;ReportData.RX = 128;}
-    else if (buttonStatus[BUTTONDOWN]) {ReportData.RY = 255;ReportData.RX = 128;}
-    else if (buttonStatus[BUTTONLEFT]) {ReportData.RX = 0;ReportData.RY = 128;}
-    else if (buttonStatus[BUTTONRIGHT]) {ReportData.RX = 255;ReportData.RY = 128;}
-    else {ReportData.RX = 128;ReportData.RY = 128;}
-    
-}
-void processButtons(){
-  //state gets set with checkModeChange
-  switch (state)
-  {
-    case DIGITAL:
-        processDPAD();
-        buttonProcessing();
-    break;
-
-    case ANALOG_MODE:   
-       processLANALOG();
-       buttonProcessing();
-    break;
-    
-    case RIGHT_ANALOG_MODE:   
-       processRANALOG();
-       buttonProcessing();
-    break;
-  }
-}
-void buttonProcessing(){
-  if (buttonStatus[BUTTONA]) {ReportData.Button |= A_MASK_ON;}
-  if (buttonStatus[BUTTONB]) {ReportData.Button |= B_MASK_ON;}
-  if (buttonStatus[BUTTONX]) {ReportData.Button |= X_MASK_ON;}
-  if (buttonStatus[BUTTONY]) {ReportData.Button |= Y_MASK_ON;}
-  if (buttonStatus[BUTTONLB]) {ReportData.Button |= LB_MASK_ON;}
-  if (buttonStatus[BUTTONRB]) {ReportData.Button |= RB_MASK_ON;}
-  if (buttonStatus[BUTTONLT]) {ReportData.Button |= ZL_MASK_ON;}
-  if (buttonStatus[BUTTONRT]) {ReportData.Button |= ZR_MASK_ON;}
-  if (buttonStatus[BUTTONSTART]){ReportData.Button |= START_MASK_ON;}
-  if (buttonStatus[BUTTONSELECT]){ReportData.Button |= SELECT_MASK_ON;}
-  if (buttonStatus[BUTTONHOME]){ReportData.Button |= HOME_MASK_ON;}
-
+#define HOME_HOTKEY
+#ifdef HOME_HOTKEY  
   if(buttonStatus[BUTTONSTART] && buttonStatus[BUTTONSELECT]) {
    if (startAndSelTime == 0)
     startAndSelTime = millis();
    else if (currTime - startAndSelTime > HOME_DELAY)
    {
-      ReportData.Button |= HOME_MASK_ON;
-      ReportData.Button &= ~START_MASK_ON;
-      ReportData.Button &= ~SELECT_MASK_ON;
+      buttonStatus[BUTTONHOME] = 1;
    }
  } else {
   startAndSelTime = 0;
+  buttonStatus[BUTTONHOME] = 0;
  }
+#endif
   
 }

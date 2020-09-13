@@ -33,6 +33,7 @@ enum StringDescriptors_t
   STRING_ID_Language     = 0, // Supported Languages string descriptor ID (must be zero)
   STRING_ID_Manufacturer = 1, // Manufacturer string ID
   STRING_ID_Product      = 2, // Product string ID
+  STRING_ID_Version      = 3, // Version string ID
 };
 
 // Macros
@@ -43,14 +44,11 @@ enum StringDescriptors_t
 // The Switch -needs- this to be 64.
 // The Wii U is flexible, allowing us to use the default of 8 (which did not match the original Hori descriptors).
 #define JOYSTICK_EPSIZE           64
+#define JOYSTICK_EPSIZE_XINPUT           20
 // Descriptor Header Type - HID Class HID Descriptor
 #define DTYPE_HID                 0x21
 // Descriptor Header Type - HID Class HID Report Descriptor
 #define DTYPE_Report              0x22
-
-   /* XINPUT */
-    /** Endpoint address of the Joystick HID reporting IN endpoint. */
-    #define JOYSTICK_EPADDR_IN        (ENDPOINT_DIR_IN | 1)
     
 /* Function Prototypes: */
     uint16_t CALLBACK_USB_GetDescriptor(const uint16_t wValue,

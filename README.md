@@ -1,8 +1,8 @@
 ## LUFA Switch/XInput hybrid Fightstick
 
-I really like the "neogeo pad 2" (basically a neogeo cd pad with 6 face buttons + 2 shoulder buttons), and wanted to make one of mine work both on nintendo switch and PC so I modded an Arduino pro micro inside it and made some PoC code.
+I really like the "neogeo pad 2" (basically a neogeo cd pad with 6 face buttons + 2 triggers), and wanted to make one of mine work both on nintendo switch and PC so I modded an Arduino pro micro inside it and made some PoC code.
 
-While [it's working great](https://www.instagram.com/p/B56IP1AIHOc/), it'd definitely need a lot of code cleanup ^^;
+While [it's working great](https://www.instagram.com/p/B56IP1AIHOc/), it'd definitely need a lot of cleanup ^^;
 
 ## Acknowledgments
 
@@ -17,15 +17,15 @@ Hold "select" as you plug the controller to make it a Nintendo Switch controller
 
 Hold "start" as you plug the controller to make it an XInput controller.
 
-Gamepad mode is persistent, so if you don't press anything while plugging the controller, it will stay in the last used mode. 
+Gamepad mode is persistent across plugging and unplugging the controller, so if you don't press anything while plugging the controller, it will stay in the last used mode. 
 
 ### DPAD modes
 
-You can switch seamlessly between the 3 stick modes by pressing START+SELECT+[direction]. 
+You can switch seamlessly between the 3 stick modes by pressing START+SELECT. 
 
-- START+SELECT+UP : DPAD
-- START+SELECT+LEFT : Fake Left Analog (DPad is mapped to L-Analog)
-- START+SELECT+RIGHT : Fake Right Analog (DPad is mapped to R-Analog)
+- DPAD
+- Fake Left Analog (DPad is mapped to L-Analog)
+- Fake Right Analog (DPad is mapped to R-Analog)
 
 DPAD mode is also persistent.
 

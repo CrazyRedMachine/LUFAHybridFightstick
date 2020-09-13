@@ -1,7 +1,8 @@
 ## LUFA Switch/XInput hybrid Fightstick (PC-FX Edition)
 
-This code can be used to make 
+This code can be used to make a PC-FX Gamepad work on Nintendo Switch and XBox360 (or PC in XInput mode).
 
+I've put an arduino pro micro directly inside the controller, but you could also go non-destructive and use this code to make an external usb adapter.
 
 ## Acknowledgments
 
@@ -41,7 +42,7 @@ Because the PC-FX pad doesn't have a home button, I also added some code so that
 ## Pinout
 
 When looking at the plug of the *controller cable* :
-___________
+```___________
 \ 1 2 3 4 /
  \ 5 6 7 /
   -------
@@ -54,4 +55,6 @@ ___________
  4: latch (normally high) -> to arduino digital pin 3
  6: clock (normally high) -> to arduino digital pin 6
  7: GND                   -> to arduino GND
- 
+
+ ```
+

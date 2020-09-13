@@ -1,8 +1,7 @@
-## LUFA Switch/XInput hybrid Fightstick
+## LUFA Switch/XInput hybrid Fightstick (PC-FX Edition)
 
-I really like the "neogeo pad 2" (basically a neogeo cd pad with 6 face buttons + 2 triggers), and wanted to make one of mine work both on nintendo switch and PC so I modded an Arduino pro micro inside it and made some code.
+This code can be used to make 
 
-While [it's working great](https://www.instagram.com/p/B56IP1AIHOc/), it'd definitely need a bit more cleanup ^^;
 
 ## Acknowledgments
 
@@ -21,57 +20,38 @@ Gamepad mode is persistent across plugging and unplugging the controller, so if 
 
 ### DPAD modes
 
-You can switch seamlessly between the 3 stick modes by pressing START+SELECT+(LEFT/UP/RIGHT)
+You can use the latching switches on the PC-FX pad to switch between DPAD modes.
 
-- UP: DPAD 
-- LEFT: Fake Left Analog (DPad is mapped to L-Analog)
-- RIGHT: Fake Right Analog (DPad is mapped to R-Analog)
+MODE 1 switch selects between Analog (A) or DPAD (B).
 
-DPAD mode is also persistent.
+MODE 2 switch selects between LEFT Analog (A) or RIGHT Analog (B). 
+It is ignored when in DPAD mode. 
 
 ### Simulated home button
 
-Because the neogeo pad 2 doesn't have a home button, I also added some code so that holding start+select during more than 1 second presses the home button. You can customize the delay with #define HOME_DELAY 1000 in the .ino file.
+Because the PC-FX pad doesn't have a home button, I also added some code so that holding start+select during more than 1 second presses the home button. You can customize the delay with #define HOME_DELAY 1000 in the .ino file.
 
 ## Building Instructions
 
 - Download Arduino IDE, 
-- Download the Bounce2 Library inside the Arduino IDE
 - Download Arduino Lufa from https://github.com/Palatis/Arduino-Lufa and follow the instructions to install and activate it
 - Build and Flash for your ATMEGA32U4 Board
 - Have Fun
 
 ## Pinout
 
-Here's the pinout
+When looking at the plug of the *controller cable* :
+___________
+\ 1 2 3 4 /
+ \ 5 6 7 /
+  -------
 
-	joystickUP.attach(A0,INPUT_PULLUP);
-	
-	joystickDOWN.attach(A2,INPUT_PULLUP);
-	
-	joystickLEFT.attach(A1,INPUT_PULLUP);
-	
-	joystickRIGHT.attach(A3,INPUT_PULLUP);
-	
-	buttonA.attach(5,INPUT_PULLUP);
-	
-	buttonB.attach(4,INPUT_PULLUP);
-	
-	buttonX.attach(3,INPUT_PULLUP);
-	
-	buttonY.attach(15,INPUT_PULLUP);
-	
-	buttonLB.attach(14,INPUT_PULLUP);
-	
-	buttonRB.attach(2,INPUT_PULLUP);
-	
-	buttonLT.attach(6,INPUT_PULLUP);
-	
-	buttonRT.attach(7,INPUT_PULLUP);
-	
-	buttonSTART.attach(16,INPUT_PULLUP);
-	
-	buttonSELECT.attach(10,INPUT_PULLUP);
-	
-	buttonHOME.attach(9,INPUT_PULLUP);
-	
+  V D x L
+   x C G
+  
+ 1: 5V                    -> to arduino 5V
+ 2: data (normally high)  -> to arduino digital pin 4
+ 4: latch (normally high) -> to arduino digital pin 3
+ 6: clock (normally high) -> to arduino digital pin 6
+ 7: GND                   -> to arduino GND
+ 

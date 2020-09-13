@@ -1,37 +1,23 @@
 #include "LUFAConfig.h"
 #include <LUFA.h>
 #include "XS_HID.h"
-#define BOUNCE_WITH_PROMPT_DETECTION
-#include <Bounce2.h>
 #include <EEPROM.h>
 #include <inttypes.h>
-
 //delay in ms for start+select to become HOME
 #define HOME_DELAY 1000
 
+/** PINS **/
+int DATA_CLOCK    = 6;
+int DATA_LATCH    = 3;
+int DATA_SERIAL   = 4;
+/** Data store for current state of buttons **/
+byte buttons[16];
+
 /* Buttons declarations */
-#define MILLIDEBOUNCE 1 //Debounce time in milliseconds
 unsigned long startAndSelTime = 0;
 unsigned long currTime = 0;
 
 byte internalButtonStatus[4];
-
-
-Bounce joystickUP = Bounce();
-Bounce joystickDOWN = Bounce();
-Bounce joystickLEFT = Bounce();
-Bounce joystickRIGHT = Bounce();
-Bounce buttonA = Bounce();
-Bounce buttonB = Bounce();
-Bounce buttonX = Bounce();
-Bounce buttonY = Bounce();
-Bounce buttonLB = Bounce();
-Bounce buttonRB = Bounce();
-Bounce buttonLT = Bounce();
-Bounce buttonRT = Bounce();
-Bounce buttonSTART = Bounce();
-Bounce buttonSELECT = Bounce();
-Bounce buttonHOME = Bounce();
 
 /* MODE DECLARATIONS */
 typedef enum {
@@ -43,83 +29,54 @@ State_t state;
 
 /* mode selectors */
 bool xinput;
-bool modeChanged;
-
-void checkModeChange(){
-    if (buttonStatus[BUTTONSTART] && buttonStatus[BUTTONSELECT])
-    {
-      if ( !modeChanged )
-      {
-        bool need_update = true;
-        if (internalButtonStatus[BUTTONLEFT])
-          state = ANALOG_MODE;
-        else if (internalButtonStatus[BUTTONRIGHT])
-          state = RIGHT_ANALOG_MODE;
-        else if (internalButtonStatus[BUTTONUP])
-          state = DIGITAL;
-        else need_update = false;
-        
-        if (need_update) EEPROM.put(0, state);
-        modeChanged = true;
-      }
-    }
-    else 
-    {
-      modeChanged = false;
-    }
-}
 
 void setupPins(){
-    joystickUP.attach(A0,INPUT_PULLUP);
-    joystickDOWN.attach(A2,INPUT_PULLUP);
-    joystickLEFT.attach(A1,INPUT_PULLUP);
-    joystickRIGHT.attach(A3,INPUT_PULLUP);
-    buttonA.attach(5,INPUT_PULLUP);
-    buttonB.attach(4,INPUT_PULLUP);;
-    buttonX.attach(3,INPUT_PULLUP);
-    buttonY.attach(15,INPUT_PULLUP);
-    buttonLB.attach(14,INPUT_PULLUP);
-    buttonRB.attach(2,INPUT_PULLUP);
-    buttonLT.attach(6,INPUT_PULLUP);
-    buttonRT.attach(7,INPUT_PULLUP);
-    buttonSTART.attach(16,INPUT_PULLUP);
-    buttonSELECT.attach(10,INPUT_PULLUP);
-    buttonHOME.attach(9,INPUT_PULLUP);
+  /** Set DATA_CLOCK normally HIGH **/
+  pinMode (DATA_CLOCK, OUTPUT);
+  digitalWrite (DATA_CLOCK, HIGH);
+  
+  /** Set DATA_LATCH normally HIGH **/
+  pinMode (DATA_LATCH, OUTPUT);
+  digitalWrite (DATA_LATCH, HIGH);
 
-    joystickUP.interval(MILLIDEBOUNCE);
-    joystickDOWN.interval(MILLIDEBOUNCE);
-    joystickLEFT.interval(MILLIDEBOUNCE);
-    joystickRIGHT.interval(MILLIDEBOUNCE);
-    buttonA.interval(MILLIDEBOUNCE);
-    buttonB.interval(MILLIDEBOUNCE);
-    buttonX.interval(MILLIDEBOUNCE);
-    buttonY.interval(MILLIDEBOUNCE);
-    buttonLB.interval(MILLIDEBOUNCE);
-    buttonRB.interval(MILLIDEBOUNCE);
-    buttonLT.interval(MILLIDEBOUNCE);
-    buttonRT.interval(MILLIDEBOUNCE);
-    buttonSTART.interval(MILLIDEBOUNCE);
-    buttonSELECT.interval(MILLIDEBOUNCE);
-    buttonHOME.interval(MILLIDEBOUNCE);
+  /** Set DATA_SERIAL normally HIGH **/
+  pinMode (DATA_SERIAL, OUTPUT);
+  digitalWrite (DATA_SERIAL, HIGH);
+  pinMode (DATA_SERIAL, INPUT);  
 }
-void setup() {
 
-  modeChanged = false;
+void RXTXControllerData () {
+  /** Latch for 12us **/
+  digitalWrite(DATA_LATCH, LOW);
+  delayMicroseconds(12);
+  digitalWrite(DATA_LATCH, HIGH);
+  delayMicroseconds(6);
+
+  /** Read data bit by bit from SR **/
+  for (int i = 0; i < 16; i++) {
+    digitalWrite (DATA_CLOCK, LOW);
+    delayMicroseconds (6);
+      buttons[i] = !digitalRead (DATA_SERIAL);
+    digitalWrite (DATA_CLOCK, HIGH);
+    delayMicroseconds (6);
+  }
+}
+
+void setup() {
   EEPROM.get(0, state);
   EEPROM.get(2, xinput);
   setupPins();
-  delay(500);
+  delay(3000);
+  RXTXControllerData();
 // if select is held on boot, NSWitch mode
-  int value = digitalRead(10);
-  if (value == LOW)
+  if (buttons[6])
   {
     xinput = false;
     EEPROM.put(2, xinput);
   }
 // if start is held on boot, XInput mode
   else {
-    value = digitalRead(16);
-    if (value == LOW)
+    if (buttons[7])
       {
         xinput = true;
         EEPROM.put(2, xinput);
@@ -133,8 +90,7 @@ void setup() {
 
 void loop() {
     currTime = millis();
-    buttonRead();
-    checkModeChange();    
+    buttonRead();  
     convert_dpad();
     send_pad_state();
 }
@@ -198,21 +154,28 @@ void convert_dpad(){
 
 void buttonRead()
 {  
-  if (joystickUP.update()) {internalButtonStatus[BUTTONUP] = joystickUP.fell();}
-  if (joystickDOWN.update()) {internalButtonStatus[BUTTONDOWN] = joystickDOWN.fell();}
-  if (joystickLEFT.update()) {internalButtonStatus[BUTTONLEFT] = joystickLEFT.fell();}
-  if (joystickRIGHT.update()) {internalButtonStatus[BUTTONRIGHT] = joystickRIGHT.fell();}
-  if (buttonA.update()) {buttonStatus[BUTTONA] = buttonA.fell();}
-  if (buttonB.update()) {buttonStatus[BUTTONB] = buttonB.fell();}
-  if (buttonX.update()) {buttonStatus[BUTTONX] = buttonX.fell();}
-  if (buttonY.update()) {buttonStatus[BUTTONY] = buttonY.fell();}
-  if (buttonLB.update()) {buttonStatus[BUTTONLB] = buttonLB.fell();}
-  if (buttonRB.update()) {buttonStatus[BUTTONRB] = buttonRB.fell();}
-  if (buttonLT.update()) {buttonStatus[BUTTONLT] = buttonLT.fell();}
-  if (buttonRT.update()) {buttonStatus[BUTTONRT] = buttonRT.fell();}
-  if (buttonSTART.update()) {buttonStatus[BUTTONSTART] = buttonSTART.fell();}
-  if (buttonSELECT.update()) {buttonStatus[BUTTONSELECT] = buttonSELECT.fell();}
-  if (buttonHOME.update()) { buttonStatus[BUTTONHOME] = buttonHOME.fell();}
+RXTXControllerData();
+
+buttonStatus[BUTTONRB] = buttons[0];
+buttonStatus[BUTTONA] = buttons[1];
+buttonStatus[BUTTONB] = buttons[2];
+buttonStatus[BUTTONY] = buttons[3];
+buttonStatus[BUTTONX] = buttons[4];
+buttonStatus[BUTTONLB] = buttons[5];
+buttonStatus[BUTTONSELECT] = buttons[6];
+buttonStatus[BUTTONSTART] = buttons[7];
+internalButtonStatus[BUTTONUP] = buttons[8];
+internalButtonStatus[BUTTONRIGHT] = buttons[9];
+internalButtonStatus[BUTTONDOWN] = buttons[10];
+internalButtonStatus[BUTTONLEFT] = buttons[11];
+byte modeDPAD = buttons[12];
+byte modeAR = buttons[14];
+
+if (modeDPAD)
+  state = DIGITAL;
+else
+ if (modeAR) state = RIGHT_ANALOG_MODE;
+  else state = ANALOG_MODE;
 
 #define HOME_HOTKEY
 #ifdef HOME_HOTKEY  

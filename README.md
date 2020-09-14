@@ -2,7 +2,7 @@
 
 I really like the "neogeo pad 2" (basically a neogeo cd pad with 6 face buttons + 2 triggers), and wanted to make one of mine work both on nintendo switch and PC so I modded an Arduino pro micro inside it and made some code.
 
-While [it's working great](https://www.instagram.com/p/B56IP1AIHOc/), it'd definitely need a bit more cleanup ^^;
+While [it's working great](https://www.instagram.com/p/B56IP1AIHOc/), it'd definitely need a bit more code cleanup ^^;
 
 I've also written some variants if you'd rather convert a [PSX pad](https://github.com/CrazyRedMachine/LUFAHybridFightstick/tree/PSX), a [SNES pad](https://github.com/CrazyRedMachine/LUFAHybridFightstick/tree/SNES) or a [PC-FX pad](https://github.com/CrazyRedMachine/LUFAHybridFightstick/tree/PCFX).
 

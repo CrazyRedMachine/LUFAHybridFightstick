@@ -4,9 +4,7 @@ I really like the "neogeo pad 2" (basically a neogeo cd pad with 6 face buttons 
 
 While [it's working great](https://www.instagram.com/p/B56IP1AIHOc/), it'd definitely need a bit more cleanup ^^;
 
-I've also written some variants if you'd rather convert a [SNES pad](https://github.com/CrazyRedMachine/LUFAHybridFightstick/tree/SNES) or a [PC-FX pad](https://github.com/CrazyRedMachine/LUFAHybridFightstick/tree/PCFX).
-
-Expect new PSX code based on dualshock protocol for easier modding soon.
+I've also written some variants if you'd rather convert a [PSX pad](https://github.com/CrazyRedMachine/LUFAHybridFightstick/tree/PSX), a [SNES pad](https://github.com/CrazyRedMachine/LUFAHybridFightstick/tree/SNES) or a [PC-FX pad](https://github.com/CrazyRedMachine/LUFAHybridFightstick/tree/PCFX).
 
 ## Acknowledgments
 

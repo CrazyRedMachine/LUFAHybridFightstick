@@ -9,6 +9,8 @@ I've put an arduino pro micro directly inside the controller, but you could also
 This work is based on [fluffymadness' ATMega32U4-Switch-Fightstick](https://github.com/fluffymadness/ATMega32U4-Switch-Fightstick)
  and [bootsector's XInputPadMicro](https://github.com/bootsector/XInputPadMicro), with a couple QoL improvements I needed.
  
+The PC-FX pad read code is based on [Anthony Burkholder's USBSNES controller](https://github.com/burks10/Arduino-SNES-Controller) (as it turns out the PC-FX pad also uses 16bit serial protocol, like a SNES pad, except the data latch pin is normally HIGH instead of LOW).
+ 
 ## Features
 
 ### Gamepad modes

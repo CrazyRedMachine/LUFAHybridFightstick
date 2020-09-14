@@ -3,8 +3,18 @@
 #include "XS_HID.h"
 #include <EEPROM.h>
 #include <inttypes.h>
-//delay in ms for start+select to become HOME
+
+//activate HOME_HOTKEY (start+select becomes HOME after a delay) and delay in ms
+#define HOME_HOTKEY
 #define HOME_DELAY 1000
+
+//delay to switch between NSwitch and XInput when Mode1 and Mode2 are both on B
+#define SWITCH_DELAY 3000
+
+/* counters */
+unsigned long mode1b2bTime = 0;
+unsigned long startAndSelTime = 0;
+unsigned long currTime = 0;
 
 /** PINS **/
 int DATA_CLOCK    = 6;
@@ -12,11 +22,7 @@ int DATA_LATCH    = 3;
 int DATA_SERIAL   = 4;
 /** Data store for current state of buttons **/
 byte buttons[16];
-
-/* Buttons declarations */
-unsigned long startAndSelTime = 0;
-unsigned long currTime = 0;
-
+/* array to store up down left right before dpad conversion */
 byte internalButtonStatus[4];
 
 /* MODE DECLARATIONS */
@@ -63,30 +69,11 @@ void RXTXControllerData () {
 }
 
 void setup() {
-  EEPROM.get(0, state);
   EEPROM.get(2, xinput);
   setupPins();
-  delay(3000);
-  RXTXControllerData();
-// if select is held on boot, NSWitch mode
-  if (buttons[6])
-  {
-    xinput = false;
-    EEPROM.put(2, xinput);
-  }
-// if start is held on boot, XInput mode
-  else {
-    if (buttons[7])
-      {
-        xinput = true;
-        EEPROM.put(2, xinput);
-      }
-  }
-  
   SetupHardware(xinput);
   GlobalInterruptEnable();
 }
-
 
 void loop() {
     currTime = millis();
@@ -95,6 +82,7 @@ void loop() {
     send_pad_state();
 }
 
+/* convert dpad to analog or hat according to state */
 void convert_dpad(){
   
   switch (state)
@@ -152,6 +140,18 @@ void convert_dpad(){
   }
 }
 
+/* hotswap between nswitch and xinput controller modes */
+void change_mode(bool value){
+    GlobalInterruptDisable();
+    xinput = value;
+    EEPROM.put(2, xinput);
+    USB_Disable();
+    delay(2000);
+    SetupHardware(xinput);
+    GlobalInterruptEnable();
+}
+
+/* fill XS_HID controller buttonStatus array */
 void buttonRead()
 {  
 RXTXControllerData();
@@ -177,7 +177,21 @@ else
  if (modeAR) state = RIGHT_ANALOG_MODE;
   else state = ANALOG_MODE;
 
-#define HOME_HOTKEY
+/* xinput mode change */
+  if(modeDPAD && modeAR) {
+    if (buttonStatus[BUTTONSELECT] || buttonStatus[BUTTONSTART]){
+      if (mode1b2bTime == 0)
+        mode1b2bTime = millis();
+      else if (currTime - mode1b2bTime > SWITCH_DELAY)
+      {
+        change_mode(buttonStatus[BUTTONSTART]);
+        mode1b2bTime = 0;
+      }
+    } else mode1b2bTime = 0;
+ } else {
+  mode1b2bTime = 0;
+ }
+ 
 #ifdef HOME_HOTKEY  
   if(buttonStatus[BUTTONSTART] && buttonStatus[BUTTONSELECT]) {
    if (startAndSelTime == 0)

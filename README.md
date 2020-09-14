@@ -6,7 +6,7 @@ While [it's working great](https://www.instagram.com/p/B56IP1AIHOc/), it'd defin
 
 I've also written some variants if you'd rather convert a [SNES pad](https://github.com/CrazyRedMachine/LUFAHybridFightstick/tree/SNES) or a [PC-FX pad](https://github.com/CrazyRedMachine/LUFAHybridFightstick/tree/PCFX).
 
-Expect new PSX code based on dualshock protocol for for easier modding soon.
+Expect new PSX code based on dualshock protocol for easier modding soon.
 
 ## Acknowledgments
 

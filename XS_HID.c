@@ -1,15 +1,13 @@
 #include "XS_HID.h"
-/* BIT MANIPULATION MACRO */
-#define bit_set(p,m) ((p) |= (m))
-#define bit_clear(p,m) ((p) &= ~(m))
-#define bit_write(c,p,m) (c ? bit_set(p,m) : bit_clear(p,m))
-#define bit_check(value, bit) (((value) >> (bit)) & 0x01)
-
-USB_JoystickReport_Input_t ReportData;
-USB_JoystickReport_XInput_t XInput_ReportData;
+static USB_JoystickReport_Input_t ReportData;
+static USB_JoystickReport_XInput_t XInput_ReportData;
 
 // Configures hardware and peripherals, such as the USB peripherals.
-void SetupHardware(void) {
+void SetupHardware(bool xinput_mode) {
+  
+  //set xinput_mode for descriptors.h/.c
+  xs_xinput = xinput_mode;
+  desc_set_xinput_mode(xinput_mode);
   // We need to disable watchdog if enabled by bootloader/fuses.
   MCUSR &= ~(1 << WDRF);
   wdt_disable();
@@ -33,17 +31,17 @@ void EVENT_USB_Device_Disconnect(void) {
 // Fired when the host set the current configuration of the USB device after enumeration.
 void EVENT_USB_Device_ConfigurationChanged(void) {
 
-  if (!xinput) Endpoint_ConfigureEndpoint(JOYSTICK_OUT_EPADDR, EP_TYPE_INTERRUPT, JOYSTICK_EPSIZE, 1);
+  if (!xs_xinput) Endpoint_ConfigureEndpoint(JOYSTICK_OUT_EPADDR, EP_TYPE_INTERRUPT, JOYSTICK_EPSIZE, 1);
   else Endpoint_ConfigureEndpoint((ENDPOINT_DIR_IN | 3), EP_TYPE_INTERRUPT, 32, 1);
   
-  Endpoint_ConfigureEndpoint(JOYSTICK_IN_EPADDR, EP_TYPE_INTERRUPT, xinput? JOYSTICK_EPSIZE_XINPUT: JOYSTICK_EPSIZE, 1);
+  Endpoint_ConfigureEndpoint(JOYSTICK_IN_EPADDR, EP_TYPE_INTERRUPT, xs_xinput? JOYSTICK_EPSIZE_XINPUT: JOYSTICK_EPSIZE, 1);
 
 }
 
 // Process control requests sent to the device from the USB host.
 void EVENT_USB_Device_ControlRequest(void) {
   //No controlRequest received from the switch, so only handled in xinput mode 
- if (xinput){
+ if (xs_xinput){
   /* Handle HID Class specific requests */
   switch (USB_ControlRequest.bRequest) {
   case HID_REQ_GetReport:
@@ -70,7 +68,7 @@ void* Address = &XInput_ReportData;
 uint16_t    Size    = 20;
 
 //no OUT endpoint for xinput in this firmware
-if (!xinput){
+if (!xs_xinput){
   Address = &ReportData;
   Size = sizeof(ReportData);
   
@@ -105,21 +103,22 @@ if (!xinput){
     Endpoint_ClearIN();
     /* Clear the report data afterwards */
     memset(Address, 0, Size);
-    if (xinput) (*((USB_JoystickReport_XInput_t *) Address)).rsize = 20;
+    if (xs_xinput) (*((USB_JoystickReport_XInput_t *) Address)).rsize = 20;
   }
 }
 
-void send_pad_state(void) {
+void send_pad_state(void){  
+  generate_report();
   HID_Task();
   USB_USBTask();
 }
 
 void generate_report_xinput(){
   // HAT
-    buttonStatus[BUTTONUP]    ? bit_set(XInput_ReportData.digital_buttons_1, XBOX_DPAD_UP)    : bit_clear(XInput_ReportData.digital_buttons_1, XBOX_DPAD_UP);
-    buttonStatus[BUTTONDOWN]  ? bit_set(XInput_ReportData.digital_buttons_1, XBOX_DPAD_DOWN)  : bit_clear(XInput_ReportData.digital_buttons_1, XBOX_DPAD_DOWN);
-    buttonStatus[BUTTONLEFT]  ? bit_set(XInput_ReportData.digital_buttons_1, XBOX_DPAD_LEFT)  : bit_clear(XInput_ReportData.digital_buttons_1, XBOX_DPAD_LEFT);
-    buttonStatus[BUTTONRIGHT] ? bit_set(XInput_ReportData.digital_buttons_1, XBOX_DPAD_RIGHT) : bit_clear(XInput_ReportData.digital_buttons_1, XBOX_DPAD_RIGHT);
+    if (buttonStatus[BUTTONUP]){XInput_ReportData.digital_buttons_1 |= XBOX_DPAD_UP;}
+    if (buttonStatus[BUTTONDOWN]){XInput_ReportData.digital_buttons_1 |= XBOX_DPAD_DOWN;}
+    if (buttonStatus[BUTTONLEFT]){XInput_ReportData.digital_buttons_1 |= XBOX_DPAD_LEFT;}
+    if (buttonStatus[BUTTONRIGHT]){XInput_ReportData.digital_buttons_1 |= XBOX_DPAD_RIGHT;}
     
   // analogs    
     XInput_ReportData.l_x = buttonStatus[AXISLX] * 257 + -32768;
@@ -128,25 +127,22 @@ void generate_report_xinput(){
     XInput_ReportData.r_y = buttonStatus[AXISRY] * -257 + 32767;
     
   // buttons
-  
-    buttonStatus[BUTTONSTART]  ? bit_set(XInput_ReportData.digital_buttons_1, XBOX_START)       : bit_clear(XInput_ReportData.digital_buttons_1, XBOX_START);
-    buttonStatus[BUTTONSELECT] ? bit_set(XInput_ReportData.digital_buttons_1, XBOX_BACK)        : bit_clear(XInput_ReportData.digital_buttons_1, XBOX_BACK);
-    buttonStatus[BUTTONL3]     ? bit_set(XInput_ReportData.digital_buttons_1, XBOX_LEFT_STICK)  : bit_clear(XInput_ReportData.digital_buttons_1, XBOX_LEFT_STICK);
-    buttonStatus[BUTTONR3]     ? bit_set(XInput_ReportData.digital_buttons_1, XBOX_RIGHT_STICK) : bit_clear(XInput_ReportData.digital_buttons_1, XBOX_RIGHT_STICK);
+    if (buttonStatus[BUTTONSTART]){XInput_ReportData.digital_buttons_1 |= XBOX_START;}
+    if (buttonStatus[BUTTONSELECT]){XInput_ReportData.digital_buttons_1 |= XBOX_BACK;}
+    if (buttonStatus[BUTTONL3]){XInput_ReportData.digital_buttons_1 |= XBOX_LEFT_STICK;}
+    if (buttonStatus[BUTTONR3]){XInput_ReportData.digital_buttons_1 |= XBOX_RIGHT_STICK;}
 
-    buttonStatus[BUTTONA] ? bit_set(XInput_ReportData.digital_buttons_2, XBOX_A)    : bit_clear(XInput_ReportData.digital_buttons_2, XBOX_A);
-    buttonStatus[BUTTONB] ? bit_set(XInput_ReportData.digital_buttons_2, XBOX_B)  : bit_clear(XInput_ReportData.digital_buttons_2, XBOX_B);
-    buttonStatus[BUTTONX] ? bit_set(XInput_ReportData.digital_buttons_2, XBOX_X)  : bit_clear(XInput_ReportData.digital_buttons_2, XBOX_X);
-    buttonStatus[BUTTONY] ? bit_set(XInput_ReportData.digital_buttons_2, XBOX_Y) : bit_clear(XInput_ReportData.digital_buttons_2, XBOX_Y);
+    if (buttonStatus[BUTTONA]){XInput_ReportData.digital_buttons_2 |= XBOX_A;}
+    if (buttonStatus[BUTTONB]){XInput_ReportData.digital_buttons_2 |= XBOX_B;}
+    if (buttonStatus[BUTTONX]){XInput_ReportData.digital_buttons_2 |= XBOX_X;}
+    if (buttonStatus[BUTTONY]){XInput_ReportData.digital_buttons_2 |= XBOX_Y;}
 
-    buttonStatus[BUTTONLB] ? bit_set(XInput_ReportData.digital_buttons_2, XBOX_LB)    : bit_clear(XInput_ReportData.digital_buttons_2, XBOX_LB);
-    buttonStatus[BUTTONRB] ? bit_set(XInput_ReportData.digital_buttons_2, XBOX_RB)    : bit_clear(XInput_ReportData.digital_buttons_2, XBOX_RB);
+    if (buttonStatus[BUTTONLB]){XInput_ReportData.digital_buttons_2 |= XBOX_LB;}
+    if (buttonStatus[BUTTONRB]){XInput_ReportData.digital_buttons_2 |= XBOX_RB;}
+    if (buttonStatus[BUTTONHOME]){XInput_ReportData.digital_buttons_2 |= XBOX_HOME;}
 
-    buttonStatus[BUTTONHOME] ? bit_set(XInput_ReportData.digital_buttons_2, XBOX_HOME) : bit_clear(XInput_ReportData.digital_buttons_2, XBOX_HOME);
-
-    XInput_ReportData.lt = buttonStatus[BUTTONLT] * 0xFF;
-    XInput_ReportData.rt = buttonStatus[BUTTONRT] * 0xFF;
-    
+    if (buttonStatus[BUTTONLT]){XInput_ReportData.lt = 0xFF;}
+    if (buttonStatus[BUTTONRT]){XInput_ReportData.rt = 0xFF;}    
 }
 
 void generate_report_switch(){
@@ -182,7 +178,7 @@ void generate_report_switch(){
 
 }
 
-void generate_report(){
-  if (xinput) generate_report_xinput();
+static void generate_report(){
+  if (xs_xinput) generate_report_xinput();
   else generate_report_switch();
 }

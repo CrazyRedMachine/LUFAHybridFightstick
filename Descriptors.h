@@ -6,7 +6,7 @@
 #include <avr/pgmspace.h>
 #include <LUFA/LUFA/Drivers/USB/USB.h>
 
-extern bool xinput;
+void desc_set_xinput_mode(bool value);
 
 // Type Defines
 // Device Configuration Descriptor Structure
@@ -57,4 +57,3 @@ enum StringDescriptors_t
                                         ATTR_WARN_UNUSED_RESULT ATTR_NON_NULL_PTR_ARG(3);
 
 #endif
-

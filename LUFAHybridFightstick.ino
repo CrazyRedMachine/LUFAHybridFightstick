@@ -126,7 +126,7 @@ void setup() {
       }
   }
   
-  SetupHardware();
+  SetupHardware(xinput);
   GlobalInterruptEnable();
 }
 
@@ -136,7 +136,6 @@ void loop() {
     buttonRead();
     checkModeChange();    
     convert_dpad();
-    generate_report();
     send_pad_state();
 }
 
@@ -162,6 +161,7 @@ void convert_dpad(){
     buttonStatus[BUTTONDOWN] = 0;
     buttonStatus[BUTTONLEFT] = 0;
     buttonStatus[BUTTONRIGHT] = 0;
+    
     if ((internalButtonStatus[BUTTONUP]) && (internalButtonStatus[BUTTONRIGHT])){buttonStatus[AXISLY] = 0;buttonStatus[AXISLX] = 255;}
     else if ((internalButtonStatus[BUTTONDOWN]) && (internalButtonStatus[BUTTONRIGHT])) {buttonStatus[AXISLY] = 255;buttonStatus[AXISLX] = 255;}
     else if ((internalButtonStatus[BUTTONDOWN]) && (internalButtonStatus[BUTTONLEFT])) {buttonStatus[AXISLY] = 255;buttonStatus[AXISLX] = 0;}

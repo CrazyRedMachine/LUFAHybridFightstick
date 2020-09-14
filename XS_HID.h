@@ -81,6 +81,8 @@
 #define BUTTONHOME 20
 byte buttonStatus[21];
 
+static bool xs_xinput;
+
 // Joystick HID report structure. We have an input and an output.
 typedef struct {
 	uint16_t Button; // 16 buttons; see JoystickButtons_t for bit mapping
@@ -91,8 +93,6 @@ typedef struct {
 	uint8_t  RY;     // Right Stick Y
 	uint8_t  VendorSpec;
 } USB_JoystickReport_Input_t;
-
-extern USB_JoystickReport_Input_t ReportData;
 
 /* Type Defines: */
 /** Type define for the joystick HID report structure, for creating and sending HID reports to the host PC.
@@ -112,8 +112,6 @@ typedef struct {
   uint8_t reserved_1[6];
 } USB_JoystickReport_XInput_t;
 
-extern USB_JoystickReport_XInput_t XInput_ReportData;
-
 // The output is structured as a mirror of the input.
 // This is based on initial observations of the Pokken Controller.
 typedef struct {
@@ -130,7 +128,7 @@ typedef struct {
 extern "C" {
 #endif
 // Setup all necessary hardware, including USB initialization.
-void SetupHardware(void);
+void SetupHardware(bool xinput_mode);
 // Process and deliver data from IN and OUT endpoints.
 void HID_Task(void);
 // USB device event handlers.
@@ -141,11 +139,10 @@ void EVENT_USB_Device_ControlRequest(void);
 
 
 void send_pad_state(void);
-void generate_report();
+static void generate_report();
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif
-

@@ -1,5 +1,11 @@
 #include "Descriptors.h"
 
+bool g_xinput_mode = false;
+
+void desc_set_xinput_mode(bool value){
+  g_xinput_mode = value;
+}
+
 // HID Descriptors.
 const USB_Descriptor_HIDReport_Datatype_t PROGMEM JoystickReport[] = {
   HID_RI_USAGE_PAGE(8,1), /* Generic Desktop */
@@ -329,12 +335,12 @@ uint16_t    Size    = NO_DESCRIPTOR;
   switch (DescriptorType)
   {
      case DTYPE_Device:
-      Address = xinput? &DeviceDescriptorX:&DeviceDescriptor;
-      Size    = xinput? sizeof(DeviceDescriptorX):sizeof(USB_Descriptor_Device_t);
+      Address = g_xinput_mode? &DeviceDescriptorX:&DeviceDescriptor;
+      Size    = g_xinput_mode? sizeof(DeviceDescriptorX):sizeof(USB_Descriptor_Device_t);
       break;
     case DTYPE_Configuration:
-      Address = xinput? &ConfigurationDescriptorX:&ConfigurationDescriptor;
-      Size    = xinput? sizeof(ConfigurationDescriptorX):sizeof(USB_Descriptor_Configuration_t);
+      Address = g_xinput_mode? &ConfigurationDescriptorX:&ConfigurationDescriptor;
+      Size    = g_xinput_mode? sizeof(ConfigurationDescriptorX):sizeof(USB_Descriptor_Configuration_t);
       break;
     case DTYPE_String:
       switch (DescriptorNumber)
@@ -344,12 +350,12 @@ uint16_t    Size    = NO_DESCRIPTOR;
           Size    = pgm_read_byte(&LanguageString.Header.Size);
           break;
         case STRING_ID_Manufacturer:
-          Address = xinput? &ManufacturerStringX:&ManufacturerString;
-          Size    = xinput? pgm_read_byte(&ManufacturerStringX.Header.Size):pgm_read_byte(&ManufacturerString.Header.Size);
+          Address = g_xinput_mode? &ManufacturerStringX:&ManufacturerString;
+          Size    = g_xinput_mode? pgm_read_byte(&ManufacturerStringX.Header.Size):pgm_read_byte(&ManufacturerString.Header.Size);
           break;
         case STRING_ID_Product:
-          Address = xinput? &ProductStringX:&ProductString;
-          Size    = xinput ? pgm_read_byte(&ProductStringX.Header.Size):pgm_read_byte(&ProductString.Header.Size);
+          Address = g_xinput_mode? &ProductStringX:&ProductString;
+          Size    = g_xinput_mode? pgm_read_byte(&ProductStringX.Header.Size):pgm_read_byte(&ProductString.Header.Size);
           break;
         case STRING_ID_Version:
           Address = &VersionString;
@@ -371,4 +377,3 @@ uint16_t    Size    = NO_DESCRIPTOR;
   return Size;
  
 }
-

@@ -57,7 +57,7 @@
 #define XBOX_X    0x40
 #define XBOX_Y    0x80
 
-// Generic XS pad status
+// Generic XS pad status (follows nintendo switch convention (X = up / B = down))
 #define BUTTONUP 0
 #define BUTTONDOWN 1
 #define BUTTONLEFT 2

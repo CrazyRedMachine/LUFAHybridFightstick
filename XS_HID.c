@@ -132,10 +132,11 @@ void generate_report_xinput(){
     if (buttonStatus[BUTTONL3]){XInput_ReportData.digital_buttons_1 |= XBOX_LEFT_STICK;}
     if (buttonStatus[BUTTONR3]){XInput_ReportData.digital_buttons_1 |= XBOX_RIGHT_STICK;}
 
-    if (buttonStatus[BUTTONA]){XInput_ReportData.digital_buttons_2 |= XBOX_A;}
-    if (buttonStatus[BUTTONB]){XInput_ReportData.digital_buttons_2 |= XBOX_B;}
-    if (buttonStatus[BUTTONX]){XInput_ReportData.digital_buttons_2 |= XBOX_X;}
-    if (buttonStatus[BUTTONY]){XInput_ReportData.digital_buttons_2 |= XBOX_Y;}
+    /* xbox buttons are not in the same position as nintendo controllers */
+    if (buttonStatus[BUTTONA]){XInput_ReportData.digital_buttons_2 |= XBOX_B;}
+    if (buttonStatus[BUTTONB]){XInput_ReportData.digital_buttons_2 |= XBOX_A;}
+    if (buttonStatus[BUTTONX]){XInput_ReportData.digital_buttons_2 |= XBOX_Y;}
+    if (buttonStatus[BUTTONY]){XInput_ReportData.digital_buttons_2 |= XBOX_X;}
 
     if (buttonStatus[BUTTONLB]){XInput_ReportData.digital_buttons_2 |= XBOX_LB;}
     if (buttonStatus[BUTTONRB]){XInput_ReportData.digital_buttons_2 |= XBOX_RB;}

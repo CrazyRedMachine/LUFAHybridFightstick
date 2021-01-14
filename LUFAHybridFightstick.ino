@@ -6,6 +6,10 @@
 #include <EEPROM.h>
 #include <inttypes.h>
 
+/* in case you want to disable one type of gamepad */
+//#define DISABLE_NSWITCH 
+//#define DISABLE_XINPUT
+
 //make it so holding start+select triggers the HOME button
 //#define HOME_HOTKEY
 //delay in ms for start+select to become HOME in HOME_HOTKEY mode
@@ -128,6 +132,18 @@ void setup() {
   EEPROM.get(2, xinput);
   setupPins();
   delay(500);
+
+#ifdef DISABLE_NSWITCH
+#warning "NSWITCH mode is disabled, will act only as an XInput controller"
+/* force Xinput */
+  xinput = true;
+#else
+#ifdef DISABLE_XINPUT
+#warning "XINPUT mode is disabled, will act only as a Nintendo switch controller"
+/* force nswitch */
+  xinput = false;
+#else
+/* set xinput mode according to held button */
 // if select is held on boot, NSWitch mode
   int value = digitalRead(PIN_MINUS);
   if (value == LOW)
@@ -144,7 +160,8 @@ void setup() {
         EEPROM.put(2, xinput);
       }
   }
-  
+#endif
+#endif  
   SetupHardware(xinput);
   GlobalInterruptEnable();
 }

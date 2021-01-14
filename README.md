@@ -45,35 +45,23 @@ Because the neogeo pad 2 doesn't have a home button, I also added some code so t
 
 ## Pinout
 
-Here's the pinout
+Configurable in the .ino
 
-	joystickUP.attach(A0,INPUT_PULLUP);
-	
-	joystickDOWN.attach(A2,INPUT_PULLUP);
-	
-	joystickLEFT.attach(A1,INPUT_PULLUP);
-	
-	joystickRIGHT.attach(A3,INPUT_PULLUP);
-	
-	buttonA.attach(5,INPUT_PULLUP);
-	
-	buttonB.attach(4,INPUT_PULLUP);
-	
-	buttonX.attach(3,INPUT_PULLUP);
-	
-	buttonY.attach(15,INPUT_PULLUP);
-	
-	buttonLB.attach(14,INPUT_PULLUP);
-	
-	buttonRB.attach(2,INPUT_PULLUP);
-	
-	buttonLT.attach(6,INPUT_PULLUP);
-	
-	buttonRT.attach(7,INPUT_PULLUP);
-	
-	buttonSTART.attach(16,INPUT_PULLUP);
-	
-	buttonSELECT.attach(10,INPUT_PULLUP);
-	
-	buttonHOME.attach(9,INPUT_PULLUP);
-	
+```
+/* PINOUT (follows Nintendo naming (X=up, B=down)) */
+#define PIN_UP    A0
+#define PIN_DOWN  A2
+#define PIN_LEFT  A1
+#define PIN_RIGHT A3
+#define PIN_A     5            //XBOX B
+#define PIN_B     4            //XBOX A
+#define PIN_X     3            //XBOX Y
+#define PIN_Y     15           //XBOX X
+#define PIN_L     14           //XBOX LB
+#define PIN_R     2            //XBOX RB
+#define PIN_ZL    6            //XBOX LT
+#define PIN_ZR    7            //XBOX RT
+#define PIN_PLUS  16           //XBOX START
+#define PIN_MINUS 10           //XBOX BACK
+#define PIN_HOME  9
+```

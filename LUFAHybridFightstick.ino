@@ -189,26 +189,6 @@ void convert_dpad(){
     buttonStatus[BUTTONLEFT] = internalButtonStatus[BUTTONLEFT];
     buttonStatus[BUTTONRIGHT] = internalButtonStatus[BUTTONRIGHT];
     break;
-
-    case ANALOG_MODE:   
-    buttonStatus[AXISRX] = 128;
-    buttonStatus[AXISRY] = 128;
-    buttonStatus[BUTTONUP] = 0;
-    buttonStatus[BUTTONDOWN] = 0;
-    buttonStatus[BUTTONLEFT] = 0;
-    buttonStatus[BUTTONRIGHT] = 0;
-    
-    if ((internalButtonStatus[BUTTONUP]) && (internalButtonStatus[BUTTONRIGHT])){buttonStatus[AXISLY] = 0;buttonStatus[AXISLX] = 255;}
-    else if ((internalButtonStatus[BUTTONDOWN]) && (internalButtonStatus[BUTTONRIGHT])) {buttonStatus[AXISLY] = 255;buttonStatus[AXISLX] = 255;}
-    else if ((internalButtonStatus[BUTTONDOWN]) && (internalButtonStatus[BUTTONLEFT])) {buttonStatus[AXISLY] = 255;buttonStatus[AXISLX] = 0;}
-    else if ((internalButtonStatus[BUTTONUP]) && (internalButtonStatus[BUTTONLEFT])){buttonStatus[AXISLY] = 0;buttonStatus[AXISLX] = 0;}
-    else if (internalButtonStatus[BUTTONUP]) {buttonStatus[AXISLY] = 0;buttonStatus[AXISLX] = 128;}
-    else if (internalButtonStatus[BUTTONDOWN]) {buttonStatus[AXISLY] = 255;buttonStatus[AXISLX] = 128;}
-    else if (internalButtonStatus[BUTTONLEFT]) {buttonStatus[AXISLX] = 0;buttonStatus[AXISLY] = 128;}
-    else if (internalButtonStatus[BUTTONRIGHT]) {buttonStatus[AXISLX] = 255;buttonStatus[AXISLY] = 128;}
-    else {buttonStatus[AXISLX] = 128;buttonStatus[AXISLY] = 128;}
-
-    break;
     
     case RIGHT_ANALOG_MODE:   
     buttonStatus[AXISLX] = 128;
@@ -229,6 +209,30 @@ void convert_dpad(){
     else {buttonStatus[AXISRX] = 128;buttonStatus[AXISRY] = 128;}
 
     break;
+    
+    case ANALOG_MODE:
+      /* fallthrough */
+    default:  
+    buttonStatus[AXISRX] = 128;
+    buttonStatus[AXISRY] = 128;
+    buttonStatus[BUTTONUP] = 0;
+    buttonStatus[BUTTONDOWN] = 0;
+    buttonStatus[BUTTONLEFT] = 0;
+    buttonStatus[BUTTONRIGHT] = 0;
+    
+    if ((internalButtonStatus[BUTTONUP]) && (internalButtonStatus[BUTTONRIGHT])){buttonStatus[AXISLY] = 0;buttonStatus[AXISLX] = 255;}
+    else if ((internalButtonStatus[BUTTONDOWN]) && (internalButtonStatus[BUTTONRIGHT])) {buttonStatus[AXISLY] = 255;buttonStatus[AXISLX] = 255;}
+    else if ((internalButtonStatus[BUTTONDOWN]) && (internalButtonStatus[BUTTONLEFT])) {buttonStatus[AXISLY] = 255;buttonStatus[AXISLX] = 0;}
+    else if ((internalButtonStatus[BUTTONUP]) && (internalButtonStatus[BUTTONLEFT])){buttonStatus[AXISLY] = 0;buttonStatus[AXISLX] = 0;}
+    else if (internalButtonStatus[BUTTONUP]) {buttonStatus[AXISLY] = 0;buttonStatus[AXISLX] = 128;}
+    else if (internalButtonStatus[BUTTONDOWN]) {buttonStatus[AXISLY] = 255;buttonStatus[AXISLX] = 128;}
+    else if (internalButtonStatus[BUTTONLEFT]) {buttonStatus[AXISLX] = 0;buttonStatus[AXISLY] = 128;}
+    else if (internalButtonStatus[BUTTONRIGHT]) {buttonStatus[AXISLX] = 255;buttonStatus[AXISLY] = 128;}
+    else {buttonStatus[AXISLX] = 128;buttonStatus[AXISLY] = 128;}
+
+    break;
+    
+    
   }
 }
 

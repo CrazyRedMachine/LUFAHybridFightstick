@@ -176,7 +176,9 @@ void generate_report_switch(){
   if (buttonStatus[BUTTONSTART]){ReportData.Button |= START_MASK_ON;}
   if (buttonStatus[BUTTONSELECT]){ReportData.Button |= SELECT_MASK_ON;}
   if (buttonStatus[BUTTONHOME]){ReportData.Button |= HOME_MASK_ON;}
-
+  if (buttonStatus[BUTTONL3]){ReportData.Button |= L3_MASK_ON;}
+  if (buttonStatus[BUTTONR3]){ReportData.Button |= R3_MASK_ON;}
+  if (buttonStatus[BUTTONCAPTURE]){ReportData.Button |= CAPTURE_MASK_ON;}
 }
 
 static void generate_report(){

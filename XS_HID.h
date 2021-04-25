@@ -36,7 +36,10 @@
 #define ZR_MASK_ON 0x80
 #define START_MASK_ON 0x200
 #define SELECT_MASK_ON 0x100
+#define L3_MASK_ON 0x400
+#define R3_MASK_ON 0x800
 #define HOME_MASK_ON 0x1000
+#define CAPTURE_MASK_ON 0x2000
 
 // XInput digital_buttons_1
 #define XBOX_DPAD_UP    0x01
@@ -79,7 +82,8 @@
 #define BUTTONL3 18
 #define BUTTONR3 19
 #define BUTTONHOME 20
-byte buttonStatus[21];
+#define BUTTONCAPTURE 21
+byte buttonStatus[22];
 
 static bool xs_xinput;
 

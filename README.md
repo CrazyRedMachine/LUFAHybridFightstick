@@ -35,6 +35,30 @@ DPAD mode is also persistent.
 
 Because the neogeo pad 2 doesn't have a home button, I also added some code so that holding start+select during more than 1 second presses the home button. You can customize the delay with #define HOME_DELAY 1000 in the .ino file.
 
+### SOCD Cleaning
+
+When simultaneous opposite cardinal direction (SOCD) inputs are detected, the default 
+resolution follows the standard hitbox-style setup: LEFT + RIGHT = NEUTRAL and UP + DOWN = UP.
+
+SOCD configuration can be enabled with `ENABLE_SOCD_CONFIG`. This allows the x (LEFT/RIGHT) and
+y (UP/DOWN) axes to each have their own SOCD mode. These options are stored in persistent memory.
+
+Changes are performed by holding down input directions corresponding to your desired setup and 
+then pressing the SOCD configuration button combination, which is set to L3+R3 by default.
+
+- If no buttons are held down, simultaneous inputs output neutral. This is the default L+R behavior for hitbox-style controllers.
+- If one button is held down, that button will take priority when simultaneous inputs are made. This is the default U+D behavior for hitbox-style controllers — when both are held down, UP always has priority.
+- If both buttons are held down, the last input will take priority. (Also known as second input priority.)
+
+For example, to set the SOCD configuration to the default hitbox-style setup:
+- Release all directional inputs, hold UP, and press the SOCD configuration button combination.
+
+To make all SOCDs resolve to neutral:
+- Release all directional inputs and press the config button.
+
+To enable last input priority on both axes:
+- Press and hold all directional inputs, and then press the config button.
+
 ## Building Instructions
 
 - Download Arduino IDE, 

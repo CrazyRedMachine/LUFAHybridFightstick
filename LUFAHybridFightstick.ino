@@ -319,7 +319,10 @@ void buttonRead()
   if (buttonL.update()) {buttonStatus[BUTTONLB] = buttonL.fell();}
   if (buttonR.update()) {buttonStatus[BUTTONRB] = buttonR.fell();}
   if (buttonZL.update()) {buttonStatus[BUTTONLT] = buttonZL.fell();}
-  if (buttonZR.update()) {buttonStatus[BUTTONRT] = buttonZR.fell();}
+  if (buttonZR.update()) {buttonStatus[BUTTONRT] = buttonZR.fell();} 
+  //not a typo, XS_HID wants L3/R3 instead of LS/RS
+  if (buttonLS.update()) {buttonStatus[BUTTONL3] = buttonLS.fell();}
+  if (buttonRS.update()) {buttonStatus[BUTTONR3] = buttonRS.fell(); }
   if (buttonPLUS.update()) {buttonStatus[BUTTONSTART] = buttonPLUS.fell();}
   if (buttonMINUS.update()) {buttonStatus[BUTTONSELECT] = buttonMINUS.fell();}
   if (buttonHOME.update()) { buttonStatus[BUTTONHOME] = buttonHOME.fell();}

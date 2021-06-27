@@ -63,7 +63,7 @@ To enable last input priority on both axes:
 
 - Download Arduino IDE, 
 - Download the Bounce2 Library inside the Arduino IDE
-- Add `https://github.com/CrazyRedMachine/Arduino-Lufa/raw/new-workflow/package_arduino-lufa_index.json` as an Additional Board Manager URL (in `File -> Preferences` menu)
+- Add `https://github.com/CrazyRedMachine/Arduino-Lufa/raw/master/package_arduino-lufa_index.json` as an Additional Board Manager URL (in `File -> Preferences` menu)
 - Install LUFA AVR Boards from the Board Manager
 - Select Arduino Leonardo (LUFA) as your board type
 - Upload the code and Have Fun

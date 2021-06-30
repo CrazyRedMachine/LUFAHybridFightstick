@@ -136,7 +136,7 @@ const USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor = {
       .EndpointAddress        = JOYSTICK_IN_EPADDR,
       .Attributes             = (EP_TYPE_INTERRUPT | ENDPOINT_ATTR_NO_SYNC | ENDPOINT_USAGE_DATA),
       .EndpointSize           = JOYSTICK_EPSIZE,
-      .PollingIntervalMS      = 0x04
+      .PollingIntervalMS      = 0x01 //0x04
     },
 
   .HID_ReportOUTEndpoint =
@@ -218,7 +218,7 @@ const uint8_t PROGMEM ConfigurationDescriptorX[] =
   0x81,        // bEndpointAddress (IN/D2H)
   0x03,        // bmAttributes (Interrupt)
   0x20, 0x00,  // wMaxPacketSize 32
-  0x04,        // bInterval 4 (unit depends on device speed)
+  0x01,        // bInterval 1 (ms)
   
   0x07,        // bLength
   0x05,        // bDescriptorType (Endpoint)

@@ -2,7 +2,7 @@
 
 I really like the "neogeo pad 2" (basically a neogeo cd pad with 6 face buttons + 2 triggers), and wanted to make one of mine work both on nintendo switch and PC so I modded an Arduino pro micro inside it and made some code.
 
-While [it's working great](https://www.instagram.com/p/B56IP1AIHOc/), it'd definitely need a bit more code cleanup ^^;
+[Demo](https://www.instagram.com/p/B56IP1AIHOc/)
 
 I've also written some variants if you'd rather convert a [PSX pad](https://github.com/CrazyRedMachine/LUFAHybridFightstick/tree/PSX), a [SNES pad](https://github.com/CrazyRedMachine/LUFAHybridFightstick/tree/SNES) or a [PC-FX pad](https://github.com/CrazyRedMachine/LUFAHybridFightstick/tree/PCFX).
 
@@ -35,7 +35,18 @@ DPAD mode is also persistent.
 
 Analog sticks can be used by wiring them to the arduino analog inputs.
 
-In this case the DPAD modes are inactive (dpad will always remain in HAT mode regardless of DPAD mode)
+In this case the DPAD modes are inactive (dpad will always remain in HAT mode regardless of DPAD mode).
+
+**Important**: There is an auto-calibration of the analog ranges during execution, which means that you should move the sticks around before they respond properly.
+By holding the 2 analog clicks while plugging the controller you enter "persistent calibration mode" which will write calibration values to the EEPROM.
+
+So the workflow for first run should be :
+
+- Plug the controller **while holding the two analog clicks** (this is only needed the first time you flash the firmware)
+- Move both analogs around for several full rotations (so that the arduino can learn what are your analog ranges)
+- Unplug the controller (to exit calibration mode)
+
+Congrats, your analog sticks should respond properly from now on :)
 
 ### Simulated home button
 

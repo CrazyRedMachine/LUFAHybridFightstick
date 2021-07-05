@@ -31,6 +31,12 @@ You can switch seamlessly between the 3 stick modes by pressing START+SELECT+(LE
 
 DPAD mode is also persistent.
 
+### Real analog support
+
+Analog sticks can be used by wiring them to the arduino analog inputs.
+
+In this case the DPAD modes are inactive (dpad will always remain in HAT mode regardless of DPAD mode)
+
 ### Simulated home button
 
 Because the neogeo pad 2 doesn't have a home button, I also added some code so that holding start+select during more than 1 second presses the home button. You can customize the delay with #define HOME_DELAY 1000 in the .ino file.
@@ -72,21 +78,31 @@ To enable last input priority on both axes:
 
 Configurable in the .ino
 
+An Arduino Micro (not pro micro) should have enough gpio to connect a full gamepad. On a Leonardo you might need to solder an extra wire to retrieve the SS pin.
+
 ```
 /* PINOUT (follows Nintendo naming (X=up, B=down)) */
-#define PIN_UP    A0
-#define PIN_DOWN  A2
-#define PIN_LEFT  A1
-#define PIN_RIGHT A3
-#define PIN_A     5            //XBOX B
-#define PIN_B     4            //XBOX A
-#define PIN_X     3            //XBOX Y
-#define PIN_Y     15           //XBOX X
-#define PIN_L     14           //XBOX LB
+#define PIN_UP    MOSI
+#define PIN_DOWN  1
+#define PIN_LEFT  SS
+#define PIN_RIGHT 0
+#define PIN_A     12           //XBOX B
+#define PIN_B     11           //XBOX A  
+#define PIN_X     9            //XBOX Y
+#define PIN_Y     10           //XBOX X     
+#define PIN_L     8            //XBOX LB
 #define PIN_R     2            //XBOX RB
-#define PIN_ZL    6            //XBOX LT
-#define PIN_ZR    7            //XBOX RT
-#define PIN_PLUS  16           //XBOX START
-#define PIN_MINUS 10           //XBOX BACK
-#define PIN_HOME  9
+#define PIN_ZL    7            //XBOX LT
+#define PIN_ZR    3            //XBOX RT
+#define PIN_LS    A4           //XBOX LS (left analog click)
+#define PIN_RS    A5           //XBOX RS (right analog click)
+#define PIN_PLUS  4            //XBOX START
+#define PIN_MINUS 6            //XBOX BACK
+#define PIN_HOME  5
+
+#ifdef WITH_ANALOG
+#define PIN_LANALOGX    A0
+#define PIN_LANALOGY    A1
+#define PIN_RANALOGX    A2
+#define PIN_RANALOGY    A3
 ```

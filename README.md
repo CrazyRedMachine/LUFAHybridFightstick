@@ -1,3 +1,5 @@
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/donate?hosted_button_id=WT735CX4UMZ9U)
+
 ## LUFA Switch/XInput hybrid Fightstick
 
 I really like the "neogeo pad 2" (basically a neogeo cd pad with 6 face buttons + 2 triggers), and wanted to make one of mine work both on nintendo switch and PC so I modded an Arduino pro micro inside it and made some code.
@@ -117,3 +119,13 @@ An Arduino Micro (not pro micro) should have enough gpio to connect a full gamep
 #define PIN_RANALOGX    A2
 #define PIN_RANALOGY    A3
 ```
+
+## Donation
+
+If this project helps you and you want to give back, you can help me with my future projects.
+
+While not necessary, donations are much appreciated and will only go towards funding future github projects (arcade hardware ain't cheap :( ).
+
+Of course you'll also receive my gratitude and I'll remember you if you post a feature request ;)
+
+[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/donate?hosted_button_id=WT735CX4UMZ9U)

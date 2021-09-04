@@ -10,6 +10,9 @@
 //#define DISABLE_NSWITCH
 //#define DISABLE_XINPUT
 
+//support for controllers with analog sticks
+#define WITH_ANALOG
+
 // Enable on-the-fly SOCD config. If disabled, it'll lock in
 // the default configuration but still use the SOCD resolution code.
 // #define ENABLE_SOCD_CONFIG
@@ -179,9 +182,6 @@ void setup() {
 
 void loop() {
   currTime = millis();
-#ifdef WITH_ANALOG
-  axisRead();
-#endif
   buttonRead();
   checkModeChange();
   convert_dpad();
@@ -196,10 +196,12 @@ void convert_dpad() {
   switch (state)
   {
     case DIGITAL:
+    #ifndef WITH_ANALOG
       buttonStatus[AXISLX] = 128;
       buttonStatus[AXISLY] = 128;
       buttonStatus[AXISRX] = 128;
       buttonStatus[AXISRY] = 128;
+    #endif
       buttonStatus[BUTTONUP] = internalButtonStatus[BUTTONUP];
       buttonStatus[BUTTONDOWN] = internalButtonStatus[BUTTONDOWN];
       buttonStatus[BUTTONLEFT] = internalButtonStatus[BUTTONLEFT];
@@ -207,8 +209,10 @@ void convert_dpad() {
       break;
 
     case RIGHT_ANALOG_MODE:
+    #ifndef WITH_ANALOG
       buttonStatus[AXISLX] = 128;
       buttonStatus[AXISLY] = 128;
+    #endif
       buttonStatus[BUTTONUP] = 0;
       buttonStatus[BUTTONDOWN] = 0;
       buttonStatus[BUTTONLEFT] = 0;
@@ -256,8 +260,10 @@ void convert_dpad() {
     case ANALOG_MODE:
     /* fallthrough */
     default:
+    #ifndef WITH_ANALOG
       buttonStatus[AXISRX] = 128;
       buttonStatus[AXISRY] = 128;
+    #endif
       buttonStatus[BUTTONUP] = 0;
       buttonStatus[BUTTONDOWN] = 0;
       buttonStatus[BUTTONLEFT] = 0;
@@ -324,6 +330,12 @@ void buttonRead()
   buttonStatus[BUTTONA] = tKeyState.bCir;
   buttonStatus[BUTTONY] = tKeyState.bSqr;
   buttonStatus[BUTTONB] = tKeyState.bCrs;
+#ifdef WITH_ANALOG
+  buttonStatus[AXISRX] = tKeyState.bRX;
+  buttonStatus[AXISRY] = tKeyState.bRY;
+  buttonStatus[AXISLX] = tKeyState.bLX;
+  buttonStatus[AXISLY] = tKeyState.bLY;
+#endif
   
 #ifdef HOME_HOTKEY
   if (buttonStatus[BUTTONSTART] && buttonStatus[BUTTONSELECT]) {

@@ -2,17 +2,13 @@
 #include <LUFA.h>
 #include "XS_HID.h"
 #define BOUNCE_WITH_PROMPT_DETECTION
-#include <Bounce2.h>
+#include "PSXPad.h"
 #include <EEPROM.h>
 #include <inttypes.h>
 
 /* in case you want to disable one type of gamepad */
 //#define DISABLE_NSWITCH
 //#define DISABLE_XINPUT
-
-//use real analog sticks
-#define WITH_ANALOG
-#define DEADZONE     50
 
 // Enable on-the-fly SOCD config. If disabled, it'll lock in
 // the default configuration but still use the SOCD resolution code.
@@ -42,54 +38,12 @@
 #define PIN_MINUS 6            //XBOX BACK
 #define PIN_HOME  5
 
-#ifdef WITH_ANALOG
-#define PIN_LANALOGX    A0
-#define PIN_LANALOGY    A1
-#define PIN_RANALOGX    A2
-#define PIN_RANALOGY    A3
-
-typedef struct point_s {
-  int x;
-  int y;
-} point_t;
-
-typedef struct range_s {
-  point_t min;
-  point_t max;
-  point_t center;
-} range_t;
-
-range_t g_range_l = {{400, 400}, {600, 600}, {511, 511}};
-range_t g_range_r = {{400, 400}, {600, 600}, {511, 511}};
-
-bool g_calibrating = false;
-#endif
-
 /* Buttons declarations */
 #define MILLIDEBOUNCE 1 //Debounce time in milliseconds
 unsigned long startAndSelTime = 0;
 unsigned long currTime = 0;
 
 byte internalButtonStatus[4];
-
-
-Bounce joystickUP = Bounce();
-Bounce joystickDOWN = Bounce();
-Bounce joystickLEFT = Bounce();
-Bounce joystickRIGHT = Bounce();
-Bounce buttonA = Bounce();
-Bounce buttonB = Bounce();
-Bounce buttonX = Bounce();
-Bounce buttonY = Bounce();
-Bounce buttonL = Bounce();
-Bounce buttonR = Bounce();
-Bounce buttonZL = Bounce();
-Bounce buttonZR = Bounce();
-Bounce buttonLS = Bounce();
-Bounce buttonRS = Bounce();
-Bounce buttonPLUS = Bounce();
-Bounce buttonMINUS = Bounce();
-Bounce buttonHOME = Bounce();
 
 /* MODE DECLARATIONS */
 typedef enum {
@@ -108,6 +62,9 @@ typedef enum {
 Socd_t x_socd_type = NEUTRAL; // controls left/right and up/down resolution type
 Socd_t y_socd_type = NEGATIVE;
 Socd_t x_initial_input, y_initial_input = NEUTRAL;
+
+byte lbAttPinNos[] = {A2};
+PSXPad_KeyState_t tKeyState;
 
 /* mode selectors */
 bool xinput;
@@ -175,46 +132,8 @@ void checkModeChange() {
   }
 }
 
-void setupPins() {
-  joystickUP.attach(PIN_UP, INPUT_PULLUP);
-  joystickDOWN.attach(PIN_DOWN, INPUT_PULLUP);
-  joystickLEFT.attach(PIN_LEFT, INPUT_PULLUP);
-  joystickRIGHT.attach(PIN_RIGHT, INPUT_PULLUP);
-  buttonA.attach(PIN_A, INPUT_PULLUP);     // XBOX B
-  buttonB.attach(PIN_B, INPUT_PULLUP);     // XBOX A
-  buttonX.attach(PIN_X, INPUT_PULLUP);     // XBOX Y
-  buttonY.attach(PIN_Y, INPUT_PULLUP);    // XBOX X
-  buttonL.attach(PIN_L, INPUT_PULLUP);    // XBOX LB
-  buttonR.attach(PIN_R, INPUT_PULLUP);     // XBOX RB
-  buttonZL.attach(PIN_ZL, INPUT_PULLUP);    // XBOX LT
-  buttonZR.attach(PIN_ZR, INPUT_PULLUP);    // XBOX RT
-  buttonLS.attach(PIN_LS, INPUT_PULLUP);       // XBOX LS
-  buttonRS.attach(PIN_RS, INPUT_PULLUP);       // XBOX RS
-  buttonPLUS.attach(PIN_PLUS, INPUT_PULLUP);   // XBOX START
-  buttonMINUS.attach(PIN_MINUS, INPUT_PULLUP); // XBOX BACK
-  buttonHOME.attach(PIN_HOME, INPUT_PULLUP);
-
-  joystickUP.interval(MILLIDEBOUNCE);
-  joystickDOWN.interval(MILLIDEBOUNCE);
-  joystickLEFT.interval(MILLIDEBOUNCE);
-  joystickRIGHT.interval(MILLIDEBOUNCE);
-  buttonA.interval(MILLIDEBOUNCE);
-  buttonB.interval(MILLIDEBOUNCE);
-  buttonX.interval(MILLIDEBOUNCE);
-  buttonY.interval(MILLIDEBOUNCE);
-  buttonL.interval(MILLIDEBOUNCE);
-  buttonR.interval(MILLIDEBOUNCE);
-  buttonZL.interval(MILLIDEBOUNCE);
-  buttonZR.interval(MILLIDEBOUNCE);
-  buttonLS.interval(MILLIDEBOUNCE);
-  buttonRS.interval(MILLIDEBOUNCE);
-  buttonPLUS.interval(MILLIDEBOUNCE);
-  buttonMINUS.interval(MILLIDEBOUNCE);
-  buttonHOME.interval(MILLIDEBOUNCE);
-}
-
 void setup() {
-
+  PSXPads.begin(1, lbAttPinNos);
   modeChanged = false;
   EEPROM.get(0, state);
   EEPROM.get(2, xinput);
@@ -222,7 +141,6 @@ void setup() {
   EEPROM.get(4, x_socd_type);
   EEPROM.get(6, y_socd_type);
 #endif
-  setupPins();
   delay(500);
 
 #ifdef DISABLE_NSWITCH
@@ -237,47 +155,21 @@ void setup() {
 #else
   /* set xinput mode according to held button */
   // if select is held on boot, NSWitch mode
-  int value = digitalRead(PIN_MINUS);
-  if (value == LOW)
+  PSXPads.pool();
+  PSXPads.lpcPads[0]->getKeyState(&tKeyState);
+  
+  if(tKeyState.bSel)
   {
     xinput = false;
     EEPROM.put(2, xinput);
   }
   // if start is held on boot, XInput mode
-  else {
-    value = digitalRead(PIN_PLUS);
-    if (value == LOW)
-    {
-      xinput = true;
-      EEPROM.put(2, xinput);
-    }
+  else if(tKeyState.bStt)
+  {
+    xinput = true;
+    EEPROM.put(2, xinput);
   }
 #endif
-#endif
-
-#ifdef WITH_ANALOG
-  if (digitalRead(PIN_LS) == LOW && digitalRead(PIN_RS) == LOW)
-  {
-    g_calibrating = true;
-  }
-
-  g_range_l.center.x = analogRead(PIN_LANALOGX);
-  g_range_l.center.y = analogRead(PIN_LANALOGY);
-  g_range_r.center.x = analogRead(PIN_RANALOGX);
-  g_range_r.center.y = analogRead(PIN_RANALOGY);
-
-  if (!g_calibrating)
-  {
-    EEPROM.get(8, g_range_l.min.x);
-    EEPROM.get(10, g_range_l.min.y);
-    EEPROM.get(12, g_range_l.max.x);
-    EEPROM.get(14, g_range_l.max.y);
-
-    EEPROM.get(16, g_range_r.min.x);
-    EEPROM.get(18, g_range_r.min.y);
-    EEPROM.get(20, g_range_r.max.x);
-    EEPROM.get(22, g_range_r.max.y);
-  }
 #endif
 
   SetupHardware(xinput);
@@ -296,120 +188,10 @@ void loop() {
   send_pad_state();
 }
 
-#ifdef WITH_ANALOG
-void axisRead()
-{
-  point_t curr;
-
-  // left analog X
-  curr.x = analogRead(PIN_LANALOGX);
-  curr.y = analogRead(PIN_LANALOGY);
-
-  if ((curr.x - g_range_l.center.x < DEADZONE) && (curr.x - g_range_l.center.x > -DEADZONE))
-    buttonStatus[AXISLX] = 127;
-  else if (curr.x < g_range_l.min.x) {
-    g_range_l.min.x = curr.x - 10;
-
-    if (g_calibrating)
-      EEPROM.put(8, g_range_l.min.x);
-
-    buttonStatus[AXISLX] = 0;
-  }
-  else if (curr.x > g_range_l.max.x) {
-    g_range_l.max.x = curr.x + 10;
-    if (g_calibrating)
-      EEPROM.put(12, g_range_l.max.x);
-    buttonStatus[AXISLX] = 255;
-  } else if (curr.x > g_range_l.center.x) {
-    buttonStatus[AXISLX] = map(curr.x, g_range_l.center.x, g_range_l.max.x, 127, 255);
-  } else if (curr.x < g_range_l.center.x) {
-    buttonStatus[AXISLX] = map(curr.x, g_range_l.min.x, g_range_l.center.x, 0, 127);
-  }
-  buttonStatus[AXISLX] *= -1;
-
-  if ((curr.y - g_range_l.center.y < DEADZONE) && (curr.y - g_range_l.center.y > -DEADZONE))
-    buttonStatus[AXISLY] = 127;
-  else if (curr.y < g_range_l.min.y) {
-    g_range_l.min.y = curr.y - 10;
-    if (g_calibrating)
-      EEPROM.put(10, g_range_l.min.y);
-    buttonStatus[AXISLY] = 0;
-  }
-  else if (curr.y > g_range_l.max.y) {
-    g_range_l.max.y = curr.y + 10;
-    if (g_calibrating)
-      EEPROM.put(14, g_range_l.max.y);
-    buttonStatus[AXISLY] = 255;
-  } else if (curr.y > g_range_l.center.y) {
-    buttonStatus[AXISLY] = map(curr.y, g_range_l.center.y, g_range_l.max.y, 127, 255);
-  } else if (curr.y < g_range_l.center.y) {
-    buttonStatus[AXISLY] = map(curr.y, g_range_l.min.y, g_range_l.center.y, 0, 127);
-  }
-  buttonStatus[AXISLY] *= -1;
-
-
-  // right analog
-
-  curr.x = analogRead(PIN_RANALOGX);
-  curr.y = analogRead(PIN_RANALOGY);
-
-  if ((curr.x - g_range_r.center.x < 50) && (curr.x - g_range_r.center.x > -50))
-    buttonStatus[AXISRX] = 127;
-  else if (curr.x < g_range_r.min.x) {
-    g_range_r.min.x = curr.x - 10;
-    if (g_calibrating)
-      EEPROM.put(16, g_range_r.min.x);
-    buttonStatus[AXISRX] = 0;
-  }
-  else if (curr.x > g_range_r.max.x) {
-    g_range_r.max.x = curr.x + 10;
-    if (g_calibrating)
-      EEPROM.put(20, g_range_r.max.x);
-    buttonStatus[AXISRX] = 255;
-  } else if (curr.x > g_range_r.center.x) {
-    buttonStatus[AXISRX] = map(curr.x, g_range_r.center.x, g_range_r.max.x, 127, 255);
-  } else if (curr.x < g_range_r.center.x) {
-    buttonStatus[AXISRX] = map(curr.x, g_range_r.min.x, g_range_r.center.x, 0, 127);
-  }
-  buttonStatus[AXISRX] *= -1;
-
-
-  if ((curr.y - g_range_r.center.y < 50) && (curr.y - g_range_r.center.y > -50))
-    buttonStatus[AXISRY] = 127;
-  else if (curr.y < g_range_r.min.y) {
-    g_range_r.min.y = curr.y - 10;
-    if (g_calibrating)
-      EEPROM.put(18, g_range_r.min.y);
-    buttonStatus[AXISRY] = 0;
-  }
-  else if (curr.y > g_range_r.max.y) {
-    g_range_r.max.y = curr.y + 10;
-    if (g_calibrating)
-      EEPROM.put(22, g_range_r.max.y);
-    buttonStatus[AXISRY] = 255;
-  } else if (curr.y > g_range_r.center.y) {
-    buttonStatus[AXISRY] = map(curr.y, g_range_r.center.y, g_range_r.max.y, 127, 255);
-  } else if (curr.y < g_range_r.center.y) {
-    buttonStatus[AXISRY] = map(curr.y, g_range_r.min.y, g_range_r.center.y, 0, 127);
-  }
-  buttonStatus[AXISRY] *= -1;
-
-}
-#endif
-
 void convert_dpad() {
   // Prevent SOCD inputs (left+right or up+down) from making it to the logic below.
   clean_socd(&internalButtonStatus[BUTTONLEFT], &internalButtonStatus[BUTTONRIGHT], &x_socd_type, &x_initial_input);
   clean_socd(&internalButtonStatus[BUTTONUP], &internalButtonStatus[BUTTONDOWN], &y_socd_type, &y_initial_input);
-
-#ifdef WITH_ANALOG
-  // force digital mode for dpad (TODO: allow the other modes as well)
-  buttonStatus[BUTTONUP] = internalButtonStatus[BUTTONUP];
-  buttonStatus[BUTTONDOWN] = internalButtonStatus[BUTTONDOWN];
-  buttonStatus[BUTTONLEFT] = internalButtonStatus[BUTTONLEFT];
-  buttonStatus[BUTTONRIGHT] = internalButtonStatus[BUTTONRIGHT];
-  return;
-#endif
 
   switch (state)
   {
@@ -519,63 +301,30 @@ void convert_dpad() {
       }
 
       break;
-
-
   }
 }
 
 void buttonRead()
 {
-  // for SOCD cleaning to work properly we need directions to update
-  // on any change instead of on fall
-  joystickUP.update(); joystickDOWN.update(); joystickLEFT.update(); joystickRIGHT.update();
-  if (joystickUP.changed() || joystickDOWN.changed() || joystickLEFT.changed() || joystickRIGHT.changed())
-  {
-    internalButtonStatus[BUTTONUP] = !joystickUP.read();
-    internalButtonStatus[BUTTONDOWN] = !joystickDOWN.read();
-    internalButtonStatus[BUTTONLEFT] = !joystickLEFT.read();
-    internalButtonStatus[BUTTONRIGHT] = !joystickRIGHT.read();
-  }
-  if (buttonA.update()) {
-    buttonStatus[BUTTONA] = buttonA.fell();
-  }
-  if (buttonB.update()) {
-    buttonStatus[BUTTONB] = buttonB.fell();
-  }
-  if (buttonX.update()) {
-    buttonStatus[BUTTONX] = buttonX.fell();
-  }
-  if (buttonY.update()) {
-    buttonStatus[BUTTONY] = buttonY.fell();
-  }
-  if (buttonL.update()) {
-    buttonStatus[BUTTONLB] = buttonL.fell();
-  }
-  if (buttonR.update()) {
-    buttonStatus[BUTTONRB] = buttonR.fell();
-  }
-  if (buttonZL.update()) {
-    buttonStatus[BUTTONLT] = buttonZL.fell();
-  }
-  if (buttonZR.update()) {
-    buttonStatus[BUTTONRT] = buttonZR.fell();
-  }
-  if (buttonLS.update()) {
-    buttonStatus[BUTTONL3] = buttonLS.fell();
-  }
-  if (buttonRS.update()) {
-    buttonStatus[BUTTONR3] = buttonRS.fell();
-  }
-  if (buttonPLUS.update()) {
-    buttonStatus[BUTTONSTART] = buttonPLUS.fell();
-  }
-  if (buttonMINUS.update()) {
-    buttonStatus[BUTTONSELECT] = buttonMINUS.fell();
-  }
-  if (buttonHOME.update()) {
-    buttonStatus[BUTTONHOME] = buttonHOME.fell();
-  }
-
+  PSXPads.pool();
+  PSXPads.lpcPads[0]->getKeyState(&tKeyState);
+  buttonStatus[BUTTONSELECT] = tKeyState.bSel;
+  buttonStatus[BUTTONL3] = tKeyState.bL3;
+  buttonStatus[BUTTONR3] = tKeyState.bR3;
+  buttonStatus[BUTTONSTART] = tKeyState.bStt;
+  internalButtonStatus[BUTTONUP] = tKeyState.bU;
+  internalButtonStatus[BUTTONRIGHT] = tKeyState.bR;
+  internalButtonStatus[BUTTONDOWN] = tKeyState.bD;
+  internalButtonStatus[BUTTONLEFT] = tKeyState.bL;
+  buttonStatus[BUTTONLT] = tKeyState.bL2;
+  buttonStatus[BUTTONRT] = tKeyState.bR2;
+  buttonStatus[BUTTONLB] = tKeyState.bL1;
+  buttonStatus[BUTTONRB] = tKeyState.bR1;
+  buttonStatus[BUTTONX] = tKeyState.bTri;
+  buttonStatus[BUTTONA] = tKeyState.bCir;
+  buttonStatus[BUTTONY] = tKeyState.bSqr;
+  buttonStatus[BUTTONB] = tKeyState.bCrs;
+  
 #ifdef HOME_HOTKEY
   if (buttonStatus[BUTTONSTART] && buttonStatus[BUTTONSELECT]) {
     if (startAndSelTime == 0)

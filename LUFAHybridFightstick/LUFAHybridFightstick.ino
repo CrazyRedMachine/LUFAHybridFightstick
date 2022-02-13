@@ -11,8 +11,8 @@
 //#define DISABLE_XINPUT
 
 //use real analog sticks
-#define WITH_ANALOG
-#define DEADZONE     50
+//#define WITH_ANALOG
+//#define DEADZONE     50
 
 // Enable on-the-fly SOCD config. If disabled, it'll lock in
 // the default configuration but still use the SOCD resolution code.
@@ -72,7 +72,6 @@ unsigned long currTime = 0;
 
 byte internalButtonStatus[4];
 
-
 Bounce joystickUP = Bounce();
 Bounce joystickDOWN = Bounce();
 Bounce joystickLEFT = Bounce();
@@ -116,25 +115,8 @@ bool modeChanged;
 void checkModeChange() {
   if (buttonStatus[BUTTONSTART] && buttonStatus[BUTTONSELECT])
   {
-    if ( !modeChanged )
-    {
-      if ( !modeChanged )
-      {
-        bool need_update = true;
-        if (internalButtonStatus[BUTTONLEFT])
-          state = ANALOG_MODE;
-        else if (internalButtonStatus[BUTTONRIGHT])
-          state = RIGHT_ANALOG_MODE;
-        else if (internalButtonStatus[BUTTONUP])
-          state = DIGITAL;
-        else need_update = false;
-
-        if (need_update) EEPROM.put(0, state);
-        modeChanged = true;
-      }
-    }
 #ifdef ENABLE_SOCD_CONFIG
-    else if (buttonStatus[BUTTONL3] && buttonStatus[BUTTONR3])
+    if (buttonStatus[BUTTONL3] && buttonStatus[BUTTONR3])
     {
       if (!modeChanged)
       {
@@ -167,7 +149,22 @@ void checkModeChange() {
         modeChanged = true;
       }
     }
-#endif
+    else 
+#endif   
+    if ( !modeChanged )
+    {
+        bool need_update = true;
+        if (internalButtonStatus[BUTTONLEFT])
+          state = ANALOG_MODE;
+        else if (internalButtonStatus[BUTTONRIGHT])
+          state = RIGHT_ANALOG_MODE;
+        else if (internalButtonStatus[BUTTONUP])
+          state = DIGITAL;
+        else need_update = false;
+
+        if (need_update) EEPROM.put(0, state);
+        modeChanged = true;
+    }
     else
     {
       modeChanged = false;
@@ -398,16 +395,16 @@ void axisRead()
 #endif
 
 void convert_dpad() {
+  byte cleanButtonStatus[4] = {0};
   // Prevent SOCD inputs (left+right or up+down) from making it to the logic below.
-  clean_socd(&internalButtonStatus[BUTTONLEFT], &internalButtonStatus[BUTTONRIGHT], &x_socd_type, &x_initial_input);
-  clean_socd(&internalButtonStatus[BUTTONUP], &internalButtonStatus[BUTTONDOWN], &y_socd_type, &y_initial_input);
+  clean_all_socd(internalButtonStatus, cleanButtonStatus, x_socd_type, y_socd_type);
 
 #ifdef WITH_ANALOG
   // force digital mode for dpad (TODO: allow the other modes as well)
-  buttonStatus[BUTTONUP] = internalButtonStatus[BUTTONUP];
-  buttonStatus[BUTTONDOWN] = internalButtonStatus[BUTTONDOWN];
-  buttonStatus[BUTTONLEFT] = internalButtonStatus[BUTTONLEFT];
-  buttonStatus[BUTTONRIGHT] = internalButtonStatus[BUTTONRIGHT];
+  buttonStatus[BUTTONUP] = cleanButtonStatus[BUTTONUP];
+  buttonStatus[BUTTONDOWN] = cleanButtonStatus[BUTTONDOWN];
+  buttonStatus[BUTTONLEFT] = cleanButtonStatus[BUTTONLEFT];
+  buttonStatus[BUTTONRIGHT] = cleanButtonStatus[BUTTONRIGHT];
   return;
 #endif
 
@@ -418,10 +415,10 @@ void convert_dpad() {
       buttonStatus[AXISLY] = 128;
       buttonStatus[AXISRX] = 128;
       buttonStatus[AXISRY] = 128;
-      buttonStatus[BUTTONUP] = internalButtonStatus[BUTTONUP];
-      buttonStatus[BUTTONDOWN] = internalButtonStatus[BUTTONDOWN];
-      buttonStatus[BUTTONLEFT] = internalButtonStatus[BUTTONLEFT];
-      buttonStatus[BUTTONRIGHT] = internalButtonStatus[BUTTONRIGHT];
+      buttonStatus[BUTTONUP] = cleanButtonStatus[BUTTONUP];
+      buttonStatus[BUTTONDOWN] = cleanButtonStatus[BUTTONDOWN];
+      buttonStatus[BUTTONLEFT] = cleanButtonStatus[BUTTONLEFT];
+      buttonStatus[BUTTONRIGHT] = cleanButtonStatus[BUTTONRIGHT];
       break;
 
     case RIGHT_ANALOG_MODE:
@@ -432,35 +429,35 @@ void convert_dpad() {
       buttonStatus[BUTTONLEFT] = 0;
       buttonStatus[BUTTONRIGHT] = 0;
 
-      if ((internalButtonStatus[BUTTONUP]) && (internalButtonStatus[BUTTONRIGHT])) {
+      if ((cleanButtonStatus[BUTTONUP]) && (cleanButtonStatus[BUTTONRIGHT])) {
         buttonStatus[AXISRY] = 0;
         buttonStatus[AXISRX] = 255;
       }
-      else if ((internalButtonStatus[BUTTONUP]) && (internalButtonStatus[BUTTONLEFT])) {
+      else if ((cleanButtonStatus[BUTTONUP]) && (cleanButtonStatus[BUTTONLEFT])) {
         buttonStatus[AXISRY] = 0;
         buttonStatus[AXISRX] = 0;
       }
-      else if ((internalButtonStatus[BUTTONDOWN]) && (internalButtonStatus[BUTTONRIGHT])) {
+      else if ((cleanButtonStatus[BUTTONDOWN]) && (cleanButtonStatus[BUTTONRIGHT])) {
         buttonStatus[AXISRY] = 255;
         buttonStatus[AXISRX] = 255;
       }
-      else if ((internalButtonStatus[BUTTONDOWN]) && (internalButtonStatus[BUTTONLEFT])) {
+      else if ((cleanButtonStatus[BUTTONDOWN]) && (cleanButtonStatus[BUTTONLEFT])) {
         buttonStatus[AXISRY] = 255;
         buttonStatus[AXISRX] = 0;
       }
-      else if (internalButtonStatus[BUTTONUP]) {
+      else if (cleanButtonStatus[BUTTONUP]) {
         buttonStatus[AXISRY] = 0;
         buttonStatus[AXISRX] = 128;
       }
-      else if (internalButtonStatus[BUTTONDOWN]) {
+      else if (cleanButtonStatus[BUTTONDOWN]) {
         buttonStatus[AXISRY] = 255;
         buttonStatus[AXISRX] = 128;
       }
-      else if (internalButtonStatus[BUTTONLEFT]) {
+      else if (cleanButtonStatus[BUTTONLEFT]) {
         buttonStatus[AXISRX] = 0;
         buttonStatus[AXISRY] = 128;
       }
-      else if (internalButtonStatus[BUTTONRIGHT]) {
+      else if (cleanButtonStatus[BUTTONRIGHT]) {
         buttonStatus[AXISRX] = 255;
         buttonStatus[AXISRY] = 128;
       }
@@ -481,35 +478,35 @@ void convert_dpad() {
       buttonStatus[BUTTONLEFT] = 0;
       buttonStatus[BUTTONRIGHT] = 0;
 
-      if ((internalButtonStatus[BUTTONUP]) && (internalButtonStatus[BUTTONRIGHT])) {
+      if ((cleanButtonStatus[BUTTONUP]) && (cleanButtonStatus[BUTTONRIGHT])) {
         buttonStatus[AXISLY] = 0;
         buttonStatus[AXISLX] = 255;
       }
-      else if ((internalButtonStatus[BUTTONDOWN]) && (internalButtonStatus[BUTTONRIGHT])) {
+      else if ((cleanButtonStatus[BUTTONDOWN]) && (cleanButtonStatus[BUTTONRIGHT])) {
         buttonStatus[AXISLY] = 255;
         buttonStatus[AXISLX] = 255;
       }
-      else if ((internalButtonStatus[BUTTONDOWN]) && (internalButtonStatus[BUTTONLEFT])) {
+      else if ((cleanButtonStatus[BUTTONDOWN]) && (cleanButtonStatus[BUTTONLEFT])) {
         buttonStatus[AXISLY] = 255;
         buttonStatus[AXISLX] = 0;
       }
-      else if ((internalButtonStatus[BUTTONUP]) && (internalButtonStatus[BUTTONLEFT])) {
+      else if ((cleanButtonStatus[BUTTONUP]) && (cleanButtonStatus[BUTTONLEFT])) {
         buttonStatus[AXISLY] = 0;
         buttonStatus[AXISLX] = 0;
       }
-      else if (internalButtonStatus[BUTTONUP]) {
+      else if (cleanButtonStatus[BUTTONUP]) {
         buttonStatus[AXISLY] = 0;
         buttonStatus[AXISLX] = 128;
       }
-      else if (internalButtonStatus[BUTTONDOWN]) {
+      else if (cleanButtonStatus[BUTTONDOWN]) {
         buttonStatus[AXISLY] = 255;
         buttonStatus[AXISLX] = 128;
       }
-      else if (internalButtonStatus[BUTTONLEFT]) {
+      else if (cleanButtonStatus[BUTTONLEFT]) {
         buttonStatus[AXISLX] = 0;
         buttonStatus[AXISLY] = 128;
       }
-      else if (internalButtonStatus[BUTTONRIGHT]) {
+      else if (cleanButtonStatus[BUTTONRIGHT]) {
         buttonStatus[AXISLX] = 255;
         buttonStatus[AXISLY] = 128;
       }
@@ -591,6 +588,12 @@ void buttonRead()
 #endif
 }
 
+
+void clean_all_socd(byte *internalButtonStatus, byte *cleanButtonStatus, Socd_t x_socd_type, Socd_t y_socd_type)
+{
+  clean_socd(internalButtonStatus[BUTTONLEFT], &cleanButtonStatus[BUTTONLEFT], internalButtonStatus[BUTTONRIGHT], &cleanButtonStatus[BUTTONRIGHT], x_socd_type, &x_initial_input);
+  clean_socd(internalButtonStatus[BUTTONUP], &cleanButtonStatus[BUTTONUP], internalButtonStatus[BUTTONDOWN], &cleanButtonStatus[BUTTONDOWN], y_socd_type, &y_initial_input);
+}
 /**
    Cleans the given (possible) simultaneous opposite cardinal direction inputs according to the preferences provided.
 
@@ -600,53 +603,57 @@ void buttonRead()
    handled with the same logic as long as the negative and positive inputs are correctly
    arranged, so pointers are used to make the same function handle both.
 
-   @param[in,out] negative The LEFT/UP input variable.
-   @param[in,out] positive  The DOWN/RIGHT input variable.
+   @param[in] negative_in The LEFT/UP input variable.
+   @param[out] negative_out The LEFT/UP resulting value.
+   @param[in] positive_in  The DOWN/RIGHT input variable.
+   @param[out] positive_out  The DOWN/RIGHT resulting value.
    @param[in] input_priority Determines the SOCD resolution method used. @see Socd_t for how each resolution method works.
    @param[in,out] initial_input If input_priority = LAST_INPUT and SOCD cleaning is needed, this is used to determine
     which input was made last. If only one input is made, this variable is set to that input, even if input_priority != LAST_INPUT.
 */
-void clean_socd(byte *negative, byte *positive, Socd_t *input_priority, Socd_t *initial_input)
+void clean_socd(byte negative_in, byte *negative_out, byte positive_in, byte *positive_out, Socd_t input_priority, Socd_t *initial_input)
 {
-  if (*negative && *positive) // SOCD that needs to be resolved
+  if (negative_in && positive_in) // SOCD that needs to be resolved
   {
-    switch (*input_priority)
+    switch (input_priority)
     {
       case NEUTRAL:
-        *negative = *positive = false;
+        *negative_out = *positive_out = false;
         break;
       case NEGATIVE:
-        *negative = true;
-        *positive = false;
+        *negative_out = true;
+        *positive_out = false;
         break;
       case POSITIVE:
-        *negative = false;
-        *positive = true;
+        *negative_out = false;
+        *positive_out = true;
         break;
       case LAST_INPUT:
         // Check which input was made first to figure out which input was made last, which wins.
         switch (*initial_input)
         {
           case NEGATIVE:
-            *negative = false;
-            *positive = true;
+            *negative_out = false;
+            *positive_out = true;
             break;
           case POSITIVE:
-            *negative = true;
-            *positive = false;
+            *negative_out = true;
+            *positive_out = false;
             break;
           // This is a fallback case for when there hasn't been an input since starting up.
           case NEUTRAL:
-            *negative = *positive = false;
+            *negative_out = *positive_out = false;
             break;
         }
     }
   }
-  else // no SOCD to resolve, which means our current input (if any) should be set as the initial input.
+  else // no SOCD to resolve, which means our current input (if any) can be output as is, but also should be remembered as the initial input.
   {
-    if (*negative && !*positive)
+    *positive_out = positive_in;
+    *negative_out = negative_in;
+    if (negative_in && !positive_in)
       *initial_input = NEGATIVE;
-    if (*positive && !*negative)
+    if (positive_in && !negative_in)
       *initial_input = POSITIVE;
   }
 }

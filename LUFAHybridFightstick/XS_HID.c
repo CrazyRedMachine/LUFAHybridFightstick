@@ -58,12 +58,15 @@ void EVENT_USB_Device_ControlRequest(void) {
  }
 }
 
+
 // Process and deliver data from IN and OUT endpoints.
 void HID_Task(void) {
     /* Device must be connected and configured for the task to run */
 if (USB_DeviceState != DEVICE_STATE_Configured)
     return;
 
+extern bool g_need_reset;
+extern bool g_awake;
 void* Address = &XInput_ReportData;
 uint16_t    Size    = 20;
 
@@ -89,6 +92,10 @@ if (!xs_xinput){
     }
     // Regardless of whether we reacted to the data, we acknowledge an OUT packet on this endpoint.
     Endpoint_ClearOUT();
+    // reenumerate as xinput on packet received
+    //delay(2000);
+    g_need_reset = true;
+    
   }
 }
 /* Select the Joystick Report Endpoint */

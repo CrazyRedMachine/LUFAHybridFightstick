@@ -8,7 +8,7 @@
 
 /* in case you want to disable one type of gamepad */
 //#define DISABLE_NSWITCH
-//#define DISABLE_XINPUT
+#define DISABLE_XINPUT
 
 //use real analog sticks
 //#define WITH_ANALOG
@@ -210,6 +210,17 @@ void setupPins() {
   buttonHOME.interval(MILLIDEBOUNCE);
 }
 
+volatile bool g_need_reset = false;
+
+void usb_reset(bool in_xinput){
+    GlobalInterruptDisable();
+    xinput = in_xinput;
+    USB_Disable();
+    delay(2000);
+    SetupHardware(xinput);
+    GlobalInterruptEnable();
+}
+
 void setup() {
 
   modeChanged = false;
@@ -281,8 +292,9 @@ void setup() {
   GlobalInterruptEnable();
 }
 
-
+bool g_awake = false;
 void loop() {
+  static unsigned long startTime = millis();
   currTime = millis();
 #ifdef WITH_ANALOG
   axisRead();
@@ -291,6 +303,10 @@ void loop() {
   checkModeChange();
   convert_dpad();
   send_pad_state();
+  if (g_need_reset) {
+    usb_reset(true);
+    g_need_reset = false;
+  }
 }
 
 #ifdef WITH_ANALOG

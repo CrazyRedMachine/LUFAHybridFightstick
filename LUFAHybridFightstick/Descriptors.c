@@ -1,4 +1,5 @@
 #include "Descriptors.h"
+#define NO_CONTROLLER 1
 
 bool g_xinput_mode = false;
 
@@ -7,6 +8,7 @@ void desc_set_xinput_mode(bool value){
 }
 
 // HID Descriptors.
+#if NO_CONTROLLER == 0
 const USB_Descriptor_HIDReport_Datatype_t PROGMEM JoystickReport[] = {
   HID_RI_USAGE_PAGE(8,1), /* Generic Desktop */
   HID_RI_USAGE(8,5), /* Joystick */
@@ -62,6 +64,26 @@ const USB_Descriptor_HIDReport_Datatype_t PROGMEM JoystickReport[] = {
     HID_RI_OUTPUT(8,2),
   HID_RI_END_COLLECTION(0),
 };
+#else
+const USB_Descriptor_HIDReport_Datatype_t PROGMEM JoystickReport[] = {
+  HID_RI_USAGE_PAGE(8,1), /* Generic Desktop */
+  HID_RI_USAGE(8,3), /* Reserved */
+  HID_RI_COLLECTION(8,1), /* Application */
+    // Buttons (2 bytes)
+    HID_RI_LOGICAL_MINIMUM(8,0),
+    HID_RI_LOGICAL_MAXIMUM(8,1),
+    HID_RI_PHYSICAL_MINIMUM(8,0),
+    HID_RI_PHYSICAL_MAXIMUM(8,1),
+    // Output (8 bytes)
+    // Original observation of this suggests it to be a mirror of the inputs that we sent.
+    // The Switch requires us to have these descriptors available.
+    HID_RI_USAGE(16,9761),
+    HID_RI_REPORT_COUNT(8,8),   
+    HID_RI_REPORT_SIZE(8,8),
+    HID_RI_OUTPUT(8,2),
+  HID_RI_END_COLLECTION(0),
+};
+#endif
 
 // Device Descriptor Structure
 const USB_Descriptor_Device_t PROGMEM DeviceDescriptor = {
@@ -74,8 +96,13 @@ const USB_Descriptor_Device_t PROGMEM DeviceDescriptor = {
 
   .Endpoint0Size          = FIXED_CONTROL_ENDPOINT_SIZE,
 
+#if NO_CONTROLLER == 0
   .VendorID               = 0x0F0D,
   .ProductID              = 0x0092,
+#else
+  .VendorID               = 0xD0D0,
+  .ProductID              = 0xD0D0,
+#endif
   .ReleaseNumber          = VERSION_BCD(1,0,0),
 
   .ManufacturerStrIndex   = STRING_ID_Manufacturer,
@@ -316,8 +343,13 @@ const uint8_t PROGMEM ConfigurationDescriptorX[] =
 const USB_Descriptor_String_t PROGMEM LanguageString = USB_STRING_DESCRIPTOR_ARRAY(LANGUAGE_ID_ENG);
 const USB_Descriptor_String_t PROGMEM VersionString = USB_STRING_DESCRIPTOR(L"1.0");
 
+#if NO_CONTROLLER == 0
 const USB_Descriptor_String_t PROGMEM ManufacturerString = USB_STRING_DESCRIPTOR(L"HORI CO.,LTD.");
 const USB_Descriptor_String_t PROGMEM ProductString = USB_STRING_DESCRIPTOR(L"POKKEN CONTROLLER");
+#else
+const USB_Descriptor_String_t PROGMEM ManufacturerString = USB_STRING_DESCRIPTOR(L"CrazyRedMachine");
+const USB_Descriptor_String_t PROGMEM ProductString = USB_STRING_DESCRIPTOR(L"DORMANT CONTROLLER");
+#endif
 const USB_Descriptor_String_t PROGMEM ManufacturerStringX = USB_STRING_DESCRIPTOR(L"kadevice.net");
 const USB_Descriptor_String_t PROGMEM ProductStringX = USB_STRING_DESCRIPTOR(L"KADE - Kick Ass Dynamic Encoder");
 
